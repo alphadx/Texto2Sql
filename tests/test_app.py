@@ -165,6 +165,45 @@ class TestQuerySuccess(unittest.TestCase):
         self.assertTrue(sid)
 
 
+class TestObservability(unittest.TestCase):
+    def setUp(self):
+        self.client = _make_client()
+
+    @patch("app.api._audit_logger.persist")
+    @patch("app.api.execute_query")
+    @patch("app.api.generate_sql")
+    @patch("app.api.refine_query")
+    @patch("app.api.get_schema")
+    @patch("app.api.create_engine")
+    def test_audit_event_contains_required_fields(
+        self, _mock_engine, mock_schema, mock_refine, mock_sql, mock_exec, mock_persist
+    ):
+        mock_schema.return_value = ""
+        mock_refine.return_value = "desc"
+        mock_sql.return_value = "SELECT 1"
+        mock_exec.return_value = {"columns": [], "rows": []}
+
+        payload = dict(_VALID_PAYLOAD, session_id="session-observability")
+        resp = self.client.post("/nl2sql/query", json=payload)
+
+        self.assertEqual(resp.status_code, 200)
+        mock_persist.assert_called_once()
+        event = mock_persist.call_args.args[0]
+        self.assertEqual(event["session_id"], "session-observability")
+        self.assertEqual(event["engine"], "postgres")
+        self.assertEqual(event["status_code"], 200)
+        self.assertIn("schema", event["durations_ms"])
+        self.assertIn("llm", event["durations_ms"])
+        self.assertIn("sql", event["durations_ms"])
+
+    def test_metrics_endpoint_exposes_prometheus_format(self):
+        resp = self.client.get("/metrics")
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn("nl2sql_requests_total", resp.text)
+        self.assertIn("nl2sql_request_latency_ms_count", resp.text)
+        self.assertIn("nl2sql_errors_total", resp.text)
+
+
 class TestQueryErrors(unittest.TestCase):
     def setUp(self):
         self.client = _make_client()

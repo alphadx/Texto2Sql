@@ -2,13 +2,15 @@
 
 import logging
 import os
+import time
 import uuid
 from typing import Any, Literal
 
-from fastapi import APIRouter, FastAPI, HTTPException
+from fastapi import APIRouter, FastAPI, HTTPException, Response
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import create_engine
 
+from app.audit.logger import build_audit_logger_from_env
 from app.db.connector import (
     VALID_DB_MODELS,
     build_connection_url,
@@ -19,14 +21,14 @@ from app.db.connector import (
 from app.db.sql_guard import SQLValidationError, validate_sql_query
 from app.llm.converter import generate_sql, refine_query
 from app.llm.session_manager import SessionManager, build_session_manager_from_env
+from app.observability.metrics import MetricsRegistry
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 _default_session_manager = build_session_manager_from_env()
-
-DEFAULT_MAX_ROWS = int(os.getenv("NL2SQL_MAX_ROWS", "1000"))
-DEFAULT_QUERY_TIMEOUT_MS = int(os.getenv("NL2SQL_QUERY_TIMEOUT_MS", "15000"))
+_audit_logger = build_audit_logger_from_env()
+_metrics = MetricsRegistry()
 
 DEFAULT_MAX_ROWS = int(os.getenv("NL2SQL_MAX_ROWS", "1000"))
 DEFAULT_QUERY_TIMEOUT_MS = int(os.getenv("NL2SQL_QUERY_TIMEOUT_MS", "15000"))
@@ -89,78 +91,125 @@ def _build_nl2sql_router(session_manager: SessionManager) -> APIRouter:
         responses={400: {"model": ErrorResponse}, 500: {"model": ErrorResponse}, 503: {"model": ErrorResponse}},
     )
     def nl2sql_query(payload: NL2SQLQueryRequest):
-        db_model = payload.motor_bd.lower()
-        if db_model not in VALID_DB_MODELS:
-            raise HTTPException(
-                status_code=400,
-                detail={
-                    "error": (
-                        f"Invalid motor_bd: {payload.motor_bd!r}. "
-                        f"Must be one of: {', '.join(sorted(VALID_DB_MODELS))}."
-                    )
-                },
-            )
+        request_start = time.perf_counter()
+        stage_start = request_start
+        schema_ms = 0.0
+        llm_ms = 0.0
+        sql_ms = 0.0
+        status_code = 200
+        error_type: str | None = None
+        error_message: str | None = None
+        sql: str | None = None
 
         session_id = payload.session_id or str(uuid.uuid4())
+        db_model = payload.motor_bd.lower()
 
         try:
-            port = payload.puerto or default_port(db_model)
-            conn_url = build_connection_url(
-                db_model=db_model,
-                db_host=payload.host or "",
-                db_user=payload.usuario,
-                db_password=payload.contraseña,
-                db_port=port,
-                db_name=payload.nombre_bd,
-            )
-            engine = create_engine(conn_url)
-            schema = get_schema(engine)
-        except Exception as exc:  # noqa: BLE001
-            logger.error("Database connection error: %s", exc)
-            raise HTTPException(status_code=503, detail={"error": f"Database connection error: {exc}"}) from exc
+            if db_model not in VALID_DB_MODELS:
+                error_type = "invalid_db_model"
+                error_message = (
+                    f"Invalid motor_bd: {payload.motor_bd!r}. "
+                    f"Must be one of: {', '.join(sorted(VALID_DB_MODELS))}."
+                )
+                status_code = 400
+                raise HTTPException(status_code=400, detail={"error": error_message})
 
-        try:
-            refined = refine_query(
-                session_id=session_id,
-                natural_query=payload.consulta_nl,
-                schema=schema,
-                session_manager=session_manager,
-            )
-            sql = generate_sql(
-                session_id=session_id,
-                refined_query=refined,
-                schema=schema,
-                db_model=db_model,
-                session_manager=session_manager,
-            )
-        except Exception as exc:  # noqa: BLE001
-            logger.error("LLM error: %s", exc)
-            raise HTTPException(status_code=503, detail={"error": f"LLM processing error: {exc}"}) from exc
+            try:
+                port = payload.puerto or default_port(db_model)
+                conn_url = build_connection_url(
+                    db_model=db_model,
+                    db_host=payload.host or "",
+                    db_user=payload.usuario,
+                    db_password=payload.contraseña,
+                    db_port=port,
+                    db_name=payload.nombre_bd,
+                )
+                engine = create_engine(conn_url)
+                schema = get_schema(engine)
+            except Exception as exc:  # noqa: BLE001
+                logger.error("Database connection error: %s", exc)
+                error_type = "db_connection_error"
+                error_message = str(exc)
+                status_code = 503
+                raise HTTPException(status_code=503, detail={"error": f"Database connection error: {exc}"}) from exc
+            finally:
+                schema_ms = (time.perf_counter() - stage_start) * 1000
+                stage_start = time.perf_counter()
 
-        try:
-            validate_sql_query(sql)
-            result = execute_query(
-                engine,
-                sql,
-                db_model=db_model,
-                max_rows=DEFAULT_MAX_ROWS,
-                timeout_ms=DEFAULT_QUERY_TIMEOUT_MS,
-            )
-        except SQLValidationError as exc:
-            logger.warning("SQL policy validation error: %s", exc)
-            raise HTTPException(
-                status_code=400,
-                detail={"error": str(exc), "sql": sql},
-            ) from exc
-        except Exception as exc:  # noqa: BLE001
-            logger.error("SQL execution error: %s", exc)
-            raise HTTPException(
-                status_code=500,
-                detail={"error": f"SQL execution error: {exc}", "sql": sql},
-            ) from exc
+            try:
+                refined = refine_query(
+                    session_id=session_id,
+                    natural_query=payload.consulta_nl,
+                    schema=schema,
+                    session_manager=session_manager,
+                )
+                sql = generate_sql(
+                    session_id=session_id,
+                    refined_query=refined,
+                    schema=schema,
+                    db_model=db_model,
+                    session_manager=session_manager,
+                )
+            except Exception as exc:  # noqa: BLE001
+                logger.error("LLM error: %s", exc)
+                error_type = "llm_processing_error"
+                error_message = str(exc)
+                status_code = 503
+                raise HTTPException(status_code=503, detail={"error": f"LLM processing error: {exc}"}) from exc
+            finally:
+                llm_ms = (time.perf_counter() - stage_start) * 1000
+                stage_start = time.perf_counter()
 
-        result["session_id"] = session_id
-        return result
+            try:
+                validate_sql_query(sql)
+                result = execute_query(
+                    engine,
+                    sql,
+                    db_model=db_model,
+                    max_rows=DEFAULT_MAX_ROWS,
+                    timeout_ms=DEFAULT_QUERY_TIMEOUT_MS,
+                )
+            except SQLValidationError as exc:
+                logger.warning("SQL policy validation error: %s", exc)
+                error_type = "sql_validation_error"
+                error_message = str(exc)
+                status_code = 400
+                raise HTTPException(
+                    status_code=400,
+                    detail={"error": str(exc), "sql": sql},
+                ) from exc
+            except Exception as exc:  # noqa: BLE001
+                logger.error("SQL execution error: %s", exc)
+                error_type = "sql_execution_error"
+                error_message = str(exc)
+                status_code = 500
+                raise HTTPException(
+                    status_code=500,
+                    detail={"error": f"SQL execution error: {exc}", "sql": sql},
+                ) from exc
+            finally:
+                sql_ms = (time.perf_counter() - stage_start) * 1000
+
+            result["session_id"] = session_id
+            return result
+        finally:
+            total_ms = (time.perf_counter() - request_start) * 1000
+            _metrics.observe_request(total_ms, error_type=error_type)
+            _audit_logger.persist({
+                "event": "nl2sql_request",
+                "session_id": session_id,
+                "engine": db_model,
+                "status_code": status_code,
+                "durations_ms": {
+                    "total": round(total_ms, 3),
+                    "schema": round(schema_ms, 3),
+                    "llm": round(llm_ms, 3),
+                    "sql": round(sql_ms, 3),
+                },
+                "sql": sql,
+                "error_type": error_type,
+                "error_message": error_message,
+            })
 
     return router
 
@@ -182,6 +231,11 @@ def _build_core_router(session_manager: SessionManager) -> APIRouter:
         if removed:
             return {"message": f"Session {session_id!r} cleared"}
         raise HTTPException(status_code=404, detail={"error": f"Session {session_id!r} not found"})
+
+    @router.get("/metrics")
+    def metrics():
+        payload = _metrics.to_prometheus_text()
+        return Response(content=payload, media_type="text/plain; version=0.0.4")
 
     return router
 

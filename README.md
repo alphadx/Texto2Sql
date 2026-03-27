@@ -16,3 +16,25 @@ Variables para Redis:
 - `SESSION_KEY_PREFIX` (default `nl2sql:session`)
 
 Cada historial se serializa en JSON y se almacena con TTL para expiración automática. También se puede borrar explícitamente con `DELETE /session/{session_id}`.
+
+## Auditoría y métricas
+
+La API registra cada request de `POST /nl2sql/query` en formato JSON estructurado con:
+
+- `session_id`
+- `engine` (`motor_bd`)
+- `status_code`
+- `durations_ms` por etapa (`schema`, `llm`, `sql`) y total
+- `error_type` / `error_message` (si aplica)
+
+Backends de auditoría configurables:
+
+- `AUDIT_LOG_BACKEND=stream` (default): emite JSON por stdout.
+- `AUDIT_LOG_BACKEND=file`: persiste a `AUDIT_LOG_FILE_PATH` (default `logs/audit.log`).
+- `AUDIT_LOG_BACKEND=sqlite`: persiste a `AUDIT_LOG_DB_PATH` y tabla `AUDIT_LOG_DB_TABLE`.
+
+Métricas base compatibles con Prometheus disponibles en `GET /metrics`:
+
+- `nl2sql_requests_total`
+- `nl2sql_request_latency_ms_count` / `nl2sql_request_latency_ms_sum`
+- `nl2sql_errors_total{error_type="..."}`
