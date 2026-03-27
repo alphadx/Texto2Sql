@@ -6,7 +6,7 @@ import time
 import uuid
 from typing import Any, Literal
 
-from fastapi import APIRouter, FastAPI, HTTPException, Response
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import create_engine
 
@@ -21,7 +21,14 @@ from app.db.connector import (
 from app.db.sql_guard import SQLValidationError, validate_sql_query
 from app.llm.converter import generate_sql, refine_query
 from app.llm.session_manager import SessionManager, build_session_manager_from_env
-from app.observability.metrics import MetricsRegistry
+from app.security import (
+    AuthSettings,
+    decode_access_token,
+    load_auth_settings_from_env,
+    require_admin_access,
+    require_scopes,
+    validate_security_settings,
+)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -29,9 +36,6 @@ logger = logging.getLogger(__name__)
 _default_session_manager = build_session_manager_from_env()
 _audit_logger = build_audit_logger_from_env()
 _metrics = MetricsRegistry()
-
-DEFAULT_MAX_ROWS = int(os.getenv("NL2SQL_MAX_ROWS", "1000"))
-DEFAULT_QUERY_TIMEOUT_MS = int(os.getenv("NL2SQL_QUERY_TIMEOUT_MS", "15000"))
 
 
 class NL2SQLQueryRequest(BaseModel):
@@ -82,6 +86,24 @@ class ErrorResponse(BaseModel):
     sql: str | None = None
 
 
+
+
+def _install_auth_context_middleware(app: FastAPI) -> None:
+    @app.middleware("http")
+    async def auth_context_middleware(request: Request, call_next):
+        request.state.auth_context = None
+        settings: AuthSettings = request.app.state.auth_settings
+        if settings.required:
+            authorization = request.headers.get("authorization", "")
+            if authorization.lower().startswith("bearer "):
+                token = authorization[7:].strip()
+                try:
+                    request.state.auth_context = decode_access_token(token, settings)
+                except Exception:  # noqa: BLE001
+                    request.state.auth_context = None
+        return await call_next(request)
+
+
 def _build_nl2sql_router(session_manager: SessionManager) -> APIRouter:
     router = APIRouter(prefix="/nl2sql", tags=["nl2sql"])
 
@@ -90,16 +112,21 @@ def _build_nl2sql_router(session_manager: SessionManager) -> APIRouter:
         response_model=NL2SQLQueryResponse,
         responses={400: {"model": ErrorResponse}, 500: {"model": ErrorResponse}, 503: {"model": ErrorResponse}},
     )
-    def nl2sql_query(payload: NL2SQLQueryRequest):
-        request_start = time.perf_counter()
-        stage_start = request_start
-        schema_ms = 0.0
-        llm_ms = 0.0
-        sql_ms = 0.0
-        status_code = 200
-        error_type: str | None = None
-        error_message: str | None = None
-        sql: str | None = None
+    def nl2sql_query(
+        payload: NL2SQLQueryRequest,
+        _auth=Depends(require_scopes("query:execute")),
+    ):
+        db_model = payload.motor_bd.lower()
+        if db_model not in VALID_DB_MODELS:
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "error": (
+                        f"Invalid motor_bd: {payload.motor_bd!r}. "
+                        f"Must be one of: {', '.join(sorted(VALID_DB_MODELS))}."
+                    )
+                },
+            )
 
         session_id = payload.session_id or str(uuid.uuid4())
         db_model = payload.motor_bd.lower()
@@ -226,7 +253,10 @@ def _build_core_router(session_manager: SessionManager) -> APIRouter:
         response_model=DeleteSessionResponse,
         responses={404: {"model": ErrorResponse}},
     )
-    def delete_session(session_id: str):
+    def delete_session(
+        session_id: str,
+        _auth=Depends(require_admin_access(admin_scopes={"audit:admin"}, admin_roles={"admin"})),
+    ):
         removed = session_manager.clear_session(session_id)
         if removed:
             return {"message": f"Session {session_id!r} cleared"}
@@ -243,7 +273,12 @@ def _build_core_router(session_manager: SessionManager) -> APIRouter:
 def create_app(session_manager: SessionManager | None = None) -> FastAPI:
     """Create and return the FastAPI application."""
     sm = session_manager or _default_session_manager
+    auth_settings = load_auth_settings_from_env()
+    validate_security_settings(auth_settings)
+
     app = FastAPI(title="Texto2Sql API")
+    app.state.auth_settings = auth_settings
+    _install_auth_context_middleware(app)
     app.include_router(_build_nl2sql_router(sm))
     app.include_router(_build_core_router(sm))
     return app
