@@ -325,3 +325,14 @@ make test
 ```
 
 El target `test` instala `requirements.txt` + `requirements-dev.txt` y luego ejecuta `pytest tests/test_app.py`.
+
+## Demo Docker (contenedor único)
+
+Se agregó un demo en `demo/` con comando especial de Make:
+
+```bash
+make demo-install   # solicita compañía API, API key y modelo
+make demo-up        # build + up del contenedor demo
+```
+
+Detalles en `demo/README.md`.

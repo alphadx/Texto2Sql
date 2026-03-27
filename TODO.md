@@ -53,3 +53,10 @@ Este documento resume el análisis de los ajustes que faltan tras el PR **"Add c
 - [x] Sin regresiones en flujo actual de `nl2sql/query`.
 - [x] Confirmación explícita de que el borrado por `/session/{id}` funciona igual en memoria y Redis.
 - [x] Documentación actualizada y consistente con comportamiento real.
+
+## TODO demo Docker NL2SQL
+
+- [ ] Definir la compañía/proveedor API oficial para testing del demo.
+- [ ] Definir API key definitiva para ambiente de prueba.
+- [ ] Definir modelo LLM oficial para el test.
+- [x] El script de instalación del demo (`demo/install-demo.sh`) solicita esos datos al usuario.

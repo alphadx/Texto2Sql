@@ -1,0 +1,31 @@
+services:
+  texto2sql-demo:
+    build:
+      context: ..
+      dockerfile: demo/Dockerfile
+    container_name: texto2sql-demo
+    env_file:
+      - ./.env
+    environment:
+      - CHAT_CACHE_TTL_MINUTES=${CHAT_CACHE_TTL_MINUTES:-360}
+      - MYSQL_DEMO_USER=${MYSQL_DEMO_USER:-demo}
+      - MYSQL_DEMO_PASSWORD=${MYSQL_DEMO_PASSWORD:-demo1234}
+      - MYSQL_DEMO_DB=${MYSQL_DEMO_DB:-sakila}
+      - MYSQL_HOST=${MYSQL_HOST:-127.0.0.1}
+      - MYSQL_PORT=${MYSQL_PORT:-3306}
+      - NL2SQL_API_URL=${NL2SQL_API_URL}
+      - NL2SQL_API_KEY=${NL2SQL_API_KEY}
+      - NL2SQL_API_PROVIDER=${NL2SQL_API_PROVIDER}
+      - NL2SQL_MODEL=${NL2SQL_MODEL}
+    ports:
+      - "8080:8080"
+      - "3306:3306"
+    volumes:
+      - demo_mysql_data:/var/lib/mysql
+      - demo_cache:/var/cache/texto2sql-demo
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  demo_mysql_data:
+  demo_cache:
