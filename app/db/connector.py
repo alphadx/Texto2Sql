@@ -7,7 +7,9 @@ from typing import Any, Dict, List
 from urllib.parse import quote_plus
 
 from sqlalchemy import inspect, text
-from sqlalchemy.engine import Engine
+from sqlalchemy.engine import Connection, Engine
+
+from app.db.sql_guard import apply_row_limit
 
 logger = logging.getLogger(__name__)
 
@@ -164,16 +166,69 @@ def _serialize_value(value: Any) -> Any:
 # ---------------------------------------------------------------------------
 
 
-def execute_query(engine: Engine, sql: str) -> Dict[str, Any]:
+def _configure_statement_timeout(
+    conn: Connection,
+    db_model: str,
+    timeout_ms: int,
+) -> tuple[Connection, str | None]:
+    """Set per-query timeout using dialect-specific capabilities."""
+    if timeout_ms <= 0:
+        return conn, None
+
+    try:
+        if db_model in {"postgres", "postgresql"}:
+            # SET LOCAL is scoped to the active transaction.
+            conn.execute(text(f"SET LOCAL statement_timeout = {timeout_ms}"))
+            return conn, None
+        elif db_model in {"mysql", "mariadb"}:
+            conn.execute(text(f"SET SESSION MAX_EXECUTION_TIME = {timeout_ms}"))
+            return conn, "SET SESSION MAX_EXECUTION_TIME = 0"
+        elif db_model == "sqlsrv":
+            conn.execute(text(f"SET LOCK_TIMEOUT {timeout_ms}"))
+            return conn, "SET LOCK_TIMEOUT -1"
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Could not apply timeout for %s: %s", db_model, exc)
+
+    return conn.execution_options(timeout=timeout_ms / 1000), None
+
+
+def execute_query(
+    engine: Engine,
+    sql: str,
+    db_model: str,
+    max_rows: int = 1000,
+    timeout_ms: int = 15000,
+) -> Dict[str, Any]:
     """Execute *sql* and return ``{"columns": [...], "rows": [...]}``.
 
     Each column entry has ``name`` and ``type`` keys.  Types are inferred
     from the first non-null value in each column; fall back to ``"unknown"``.
     """
+    guarded_sql = apply_row_limit(sql, db_model=db_model, max_rows=max_rows)
+
     with engine.connect() as conn:
-        result = conn.execute(text(sql))
-        column_names: List[str] = list(result.keys())
-        all_rows = result.fetchall()
+        conn = conn.execution_options(timeout=timeout_ms / 1000) if timeout_ms > 0 else conn
+        if db_model in {"postgres", "postgresql"} and timeout_ms > 0:
+            with conn.begin():
+                conn, reset_sql = _configure_statement_timeout(
+                    conn, db_model=db_model, timeout_ms=timeout_ms
+                )
+                result = conn.execute(text(guarded_sql))
+                column_names: List[str] = list(result.keys())
+                all_rows = result.fetchall()
+                if reset_sql:
+                    conn.execute(text(reset_sql))
+        else:
+            conn, reset_sql = _configure_statement_timeout(
+                conn, db_model=db_model, timeout_ms=timeout_ms
+            )
+            try:
+                result = conn.execute(text(guarded_sql))
+                column_names = list(result.keys())
+                all_rows = result.fetchall()
+            finally:
+                if reset_sql:
+                    conn.execute(text(reset_sql))
 
     # Infer column types from the first non-null value per column
     col_types = ["unknown"] * len(column_names)
