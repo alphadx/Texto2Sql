@@ -41,15 +41,15 @@ Este documento resume el análisis de los ajustes que faltan tras el PR **"Add c
 
 ## 5) Documentación y operación
 
-- [ ] Extender `README.md` con ejemplos completos de configuración:
-  - modo memoria
-  - modo Redis
-  - TTL y prefijos recomendados por ambiente (dev/staging/prod)
-- [ ] Documentar formato exacto de claves Redis y consideraciones de limpieza/observabilidad.
+- [x] Extender `README.md` con ejemplos completos de configuración:
+  - [x] modo memoria
+  - [x] modo Redis
+  - [x] TTL y prefijos recomendados por ambiente (dev/staging/prod)
+- [x] Documentar formato exacto de claves Redis y consideraciones de limpieza/observabilidad.
 
 ## 6) Criterios de aceptación para cerrar corrección
 
 - [x] Todas las pruebas (`pytest`) en verde en entorno estándar del proyecto.
 - [ ] Sin regresiones en flujo actual de `nl2sql/query`.
-- [ ] Confirmación explícita de que el borrado por `/session/{id}` funciona igual en memoria y Redis.
-- [ ] Documentación actualizada y consistente con comportamiento real.
+- [x] Confirmación explícita de que el borrado por `/session/{id}` funciona igual en memoria y Redis.
+- [x] Documentación actualizada y consistente con comportamiento real.
