@@ -335,6 +335,36 @@ class TestDeleteSession(unittest.TestCase):
         self.assertFalse(self.sm.session_exists(sid))
 
 
+class TestDeleteSessionRedis(unittest.TestCase):
+    def setUp(self):
+        self.redis = FakeRedis()
+        self.sm = RedisSessionManager(self.redis, ttl_seconds=120, key_prefix="test:session")
+        self.client = _make_client(self.sm)
+
+    def test_delete_existing_redis_session_clears_both_agents(self):
+        sid = "redis-delete-ok"
+        self.sm.set_history(sid, "refiner", [{"role": "user", "content": "hola"}])
+        self.sm.set_history(sid, "sql_agent", [{"role": "assistant", "content": "SELECT 1"}])
+
+        self.assertIn(f"test:session:{sid}:refiner", self.redis.store)
+        self.assertIn(f"test:session:{sid}:sql_agent", self.redis.store)
+
+        resp = self.client.delete(f"/session/{sid}", headers=_auth_headers(roles=["admin"]))
+        self.assertEqual(resp.status_code, 200)
+        self.assertNotIn(f"test:session:{sid}:refiner", self.redis.store)
+        self.assertNotIn(f"test:session:{sid}:sql_agent", self.redis.store)
+
+    def test_delete_returns_404_when_session_expired_before_request(self):
+        sid = "redis-delete-expired"
+        self.sm.set_history(sid, "refiner", [{"role": "user", "content": "hola"}])
+
+        # Simula expiración TTL justo antes de DELETE.
+        self.redis.delete(f"test:session:{sid}:refiner", f"test:session:{sid}:sql_agent")
+
+        resp = self.client.delete(f"/session/{sid}", headers=_auth_headers(roles=["admin"]))
+        self.assertEqual(resp.status_code, 404)
+
+
 class TestAuth(unittest.TestCase):
     def setUp(self):
         self.client = _make_client()

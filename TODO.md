@@ -25,8 +25,8 @@ Este documento resume el análisis de los ajustes que faltan tras el PR **"Add c
 
 ## 3) Operación de borrado `/session/{id}`
 
-- [ ] Confirmar borrado completo por `session_id` para ambos agentes (`refiner`, `sql_agent`).
-- [ ] Revisar semántica de respuesta 404/200 cuando la sesión expiró por TTL justo antes del delete.
+- [x] Confirmar borrado completo por `session_id` para ambos agentes (`refiner`, `sql_agent`).
+- [x] Revisar semántica de respuesta 404/200 cuando la sesión expiró por TTL justo antes del delete.
 - [ ] Añadir/ajustar pruebas para condiciones de carrera básicas (borrado + escrituras concurrentes).
 
 ## 4) Pruebas automatizadas
@@ -37,7 +37,7 @@ Este documento resume el análisis de los ajustes que faltan tras el PR **"Add c
   - [x] TTL inválido en env -> fallback/error controlado.
   - [x] backend inválido -> comportamiento esperado.
   - [x] payload JSON inválido en Redis.
-- [ ] Agregar prueba de integración mínima del endpoint `DELETE /session/{id}` con backend Redis simulado.
+- [x] Agregar prueba de integración mínima del endpoint `DELETE /session/{id}` con backend Redis simulado.
 
 ## 5) Documentación y operación
 
