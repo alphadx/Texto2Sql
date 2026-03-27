@@ -1,7 +1,7 @@
 PYTHON ?= python
 PIP ?= pip
 
-.PHONY: install-dev test demo-install demo-build demo-up demo-down demo-logs
+.PHONY: install-dev test demo-install demo-check-env demo-build demo-up demo-down demo-logs
 
 install-dev:
 	$(PIP) install -r requirements.txt -r requirements-dev.txt
@@ -13,10 +13,10 @@ test: install-dev
 demo-install:
 	bash demo/install-demo.sh
 
-demo-build:
+demo-build: demo-check-env
 	docker compose -f demo/docker-compose.yml build
 
-demo-up:
+demo-up: demo-check-env
 	docker compose -f demo/docker-compose.yml up -d --build
 
 demo-down:
@@ -24,3 +24,6 @@ demo-down:
 
 demo-logs:
 	docker compose -f demo/docker-compose.yml logs -f
+
+demo-check-env:
+	@test -f demo/.env || (echo "Falta demo/.env. Ejecuta: make demo-install" && exit 1)

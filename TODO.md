@@ -60,3 +60,4 @@ Este documento resume el análisis de los ajustes que faltan tras el PR **"Add c
 - [ ] Definir API key definitiva para ambiente de prueba.
 - [ ] Definir modelo LLM oficial para el test.
 - [x] El script de instalación del demo (`demo/install-demo.sh`) solicita esos datos al usuario.
+- [ ] Validar en CI que la imagen del demo levanta correctamente y que `sakila` quedó cargada (`SELECT COUNT(*) FROM film;`).

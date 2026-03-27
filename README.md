@@ -331,8 +331,10 @@ El target `test` instala `requirements.txt` + `requirements-dev.txt` y luego eje
 Se agregó un demo en `demo/` con comando especial de Make:
 
 ```bash
-make demo-install   # solicita compañía API, API key y modelo
-make demo-up        # build + up del contenedor demo
+make demo-install   # solicita provider/API key/modelo + parámetros DB/TTL
+make demo-up        # build + up del contenedor demo (valida demo/.env)
 ```
 
 Detalles en `demo/README.md`.
+
+Parámetros dinámicos en la vista: host/puerto/db/usuario/password/engine y TTL por sesión.
