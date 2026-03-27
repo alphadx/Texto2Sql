@@ -5,6 +5,7 @@ run without any live services.
 """
 
 import os
+import threading
 import unittest
 from datetime import UTC, datetime, timedelta
 from unittest.mock import patch
@@ -53,6 +54,12 @@ class FakeRedis:
                 del self.store[key]
                 self.expiry.pop(key, None)
         return deleted
+
+    def expire(self, key, seconds):
+        if key not in self.store:
+            return False
+        self.expiry[key] = seconds
+        return True
 
 
 
@@ -205,6 +212,39 @@ class TestQuerySuccess(unittest.TestCase):
         self.assertTrue(sid)
 
 
+class TestQueryRegressionWithRedis(unittest.TestCase):
+    def setUp(self):
+        self.redis = FakeRedis()
+        self.sm = RedisSessionManager(self.redis, ttl_seconds=120, key_prefix="test:session")
+        self.client = _make_client(self.sm)
+
+    @patch("app.api.execute_query")
+    @patch("app.api.generate_sql")
+    @patch("app.api.refine_query")
+    @patch("app.api.get_schema")
+    @patch("app.api.create_engine")
+    def test_nl2sql_query_flow_remains_ok_with_redis_session_manager(
+        self, _mock_engine, mock_schema, mock_refine, mock_sql, mock_exec
+    ):
+        mock_schema.return_value = "TABLE users (id integer)"
+        mock_refine.return_value = "Retrieve users"
+        mock_sql.return_value = "SELECT id FROM users"
+        mock_exec.return_value = {"columns": [{"name": "id", "type": "integer"}], "rows": [[1], [2]]}
+
+        sid = "redis-regression-sid"
+        payload = dict(_VALID_PAYLOAD, session_id=sid)
+        resp = self.client.post("/nl2sql/query", json=payload, headers=_auth_headers(scopes=["query:execute"]))
+
+        self.assertEqual(resp.status_code, 200)
+        body = resp.json()
+        self.assertEqual(body["session_id"], sid)
+        self.assertEqual(body["columns"][0]["name"], "id")
+        self.assertEqual(body["rows"], [[1], [2]])
+        mock_refine.assert_called_once()
+        mock_sql.assert_called_once()
+        mock_exec.assert_called_once()
+
+
 class TestObservability(unittest.TestCase):
     def setUp(self):
         self.client = _make_client()
@@ -224,7 +264,7 @@ class TestObservability(unittest.TestCase):
         mock_exec.return_value = {"columns": [], "rows": []}
 
         payload = dict(_VALID_PAYLOAD, session_id="session-observability")
-        resp = self.client.post("/nl2sql/query", json=payload)
+        resp = self.client.post("/nl2sql/query", json=payload, headers=_auth_headers(scopes=["query:execute"]))
 
         self.assertEqual(resp.status_code, 200)
         mock_persist.assert_called_once()
@@ -329,6 +369,65 @@ class TestDeleteSession(unittest.TestCase):
         self.assertFalse(self.sm.session_exists(sid))
 
 
+class TestDeleteSessionRedis(unittest.TestCase):
+    def setUp(self):
+        self.redis = FakeRedis()
+        self.sm = RedisSessionManager(self.redis, ttl_seconds=120, key_prefix="test:session")
+        self.client = _make_client(self.sm)
+
+    def test_delete_existing_redis_session_clears_both_agents(self):
+        sid = "redis-delete-ok"
+        self.sm.set_history(sid, "refiner", [{"role": "user", "content": "hola"}])
+        self.sm.set_history(sid, "sql_agent", [{"role": "assistant", "content": "SELECT 1"}])
+
+        self.assertIn(f"test:session:{sid}:refiner", self.redis.store)
+        self.assertIn(f"test:session:{sid}:sql_agent", self.redis.store)
+
+        resp = self.client.delete(f"/session/{sid}", headers=_auth_headers(roles=["admin"]))
+        self.assertEqual(resp.status_code, 200)
+        self.assertNotIn(f"test:session:{sid}:refiner", self.redis.store)
+        self.assertNotIn(f"test:session:{sid}:sql_agent", self.redis.store)
+
+    def test_delete_returns_404_when_session_expired_before_request(self):
+        sid = "redis-delete-expired"
+        self.sm.set_history(sid, "refiner", [{"role": "user", "content": "hola"}])
+
+        # Simula expiración TTL justo antes de DELETE.
+        self.redis.delete(f"test:session:{sid}:refiner", f"test:session:{sid}:sql_agent")
+
+        resp = self.client.delete(f"/session/{sid}", headers=_auth_headers(roles=["admin"]))
+        self.assertEqual(resp.status_code, 404)
+
+    def test_delete_with_concurrent_writes_keeps_consistent_state(self):
+        sid = "redis-delete-race"
+        self.sm.set_history(sid, "refiner", [{"role": "user", "content": "seed"}])
+        self.sm.set_history(sid, "sql_agent", [{"role": "assistant", "content": "SELECT 1"}])
+
+        start = threading.Event()
+
+        def writer():
+            start.wait()
+            for i in range(25):
+                self.sm.set_history(sid, "refiner", [{"role": "user", "content": f"race-{i}"}])
+                self.sm.set_history(sid, "sql_agent", [{"role": "assistant", "content": f"SELECT {i}"}])
+
+        t = threading.Thread(target=writer)
+        t.start()
+        start.set()
+
+        first_delete = self.client.delete(f"/session/{sid}", headers=_auth_headers(roles=["admin"]))
+        self.assertEqual(first_delete.status_code, 200)
+
+        t.join()
+
+        # Según el interleaving, puede haberse recreado la sesión tras el primer delete.
+        second_delete = self.client.delete(f"/session/{sid}", headers=_auth_headers(roles=["admin"]))
+        self.assertIn(second_delete.status_code, (200, 404))
+        if second_delete.status_code == 200:
+            third_delete = self.client.delete(f"/session/{sid}", headers=_auth_headers(roles=["admin"]))
+            self.assertEqual(third_delete.status_code, 404)
+
+
 class TestAuth(unittest.TestCase):
     def setUp(self):
         self.client = _make_client()
@@ -387,6 +486,10 @@ class TestSessionManager(unittest.TestCase):
     def test_clear_non_existing_session(self):
         self.assertFalse(self.sm.clear_session("nope"))
 
+    def test_invalid_agent_raises_value_error(self):
+        with self.assertRaises(ValueError):
+            self.sm.get_history("s4", "unknown-agent")
+
 
 class TestRedisSessionManager(unittest.TestCase):
     def setUp(self):
@@ -409,6 +512,32 @@ class TestRedisSessionManager(unittest.TestCase):
         self.assertTrue(self.sm.session_exists(sid))
         self.assertTrue(self.sm.clear_session(sid))
         self.assertFalse(self.sm.session_exists(sid))
+
+    def test_invalid_json_payload_returns_empty_and_deletes_key(self):
+        sid = "redis-s3"
+        key = "test:session:redis-s3:refiner"
+        self.redis.store[key] = "{invalid-json"
+
+        history = self.sm.get_history(sid, "refiner")
+
+        self.assertEqual(history, [])
+        self.assertNotIn(key, self.redis.store)
+
+    def test_invalid_agent_raises_value_error(self):
+        with self.assertRaises(ValueError):
+            self.sm.set_history("s5", "unknown-agent", [])
+
+    def test_sliding_ttl_renews_expiry_on_get(self):
+        sid = "redis-s4"
+        self.sm = RedisSessionManager(self.redis, ttl_seconds=30, key_prefix="test:session", sliding_ttl=True)
+        self.sm.set_history(sid, "refiner", [{"role": "user", "content": "hola"}])
+
+        key = "test:session:redis-s4:refiner"
+        self.redis.expiry[key] = 5
+
+        history = self.sm.get_history(sid, "refiner")
+        self.assertEqual(history, [{"role": "user", "content": "hola"}])
+        self.assertEqual(self.redis.expiry[key], 30)
 
 
 class TestSessionManagerEnvFactory(unittest.TestCase):
@@ -434,6 +563,42 @@ class TestSessionManagerEnvFactory(unittest.TestCase):
     def test_build_memory_manager_from_env(self):
         manager = build_session_manager_from_env()
         self.assertIsInstance(manager, InMemorySessionManager)
+
+    @patch.dict("os.environ", {"SESSION_MANAGER_BACKEND": "bogus"}, clear=False)
+    def test_invalid_backend_falls_back_to_memory(self):
+        manager = build_session_manager_from_env()
+        self.assertIsInstance(manager, InMemorySessionManager)
+
+    @patch.object(sm_module.Redis, "from_url")
+    @patch.dict("os.environ", {
+        "SESSION_MANAGER_BACKEND": "redis",
+        "SESSION_TTL_SECONDS": "not-an-int",
+    }, clear=False)
+    def test_invalid_ttl_falls_back_to_default(self, mock_from_url):
+        fake_client = FakeRedis()
+        mock_from_url.return_value = fake_client
+        manager = build_session_manager_from_env()
+
+        self.assertIsInstance(manager, RedisSessionManager)
+        manager.set_history("s-default-ttl", "refiner", [])
+        self.assertEqual(fake_client.expiry["nl2sql:session:s-default-ttl:refiner"], 3600)
+
+    @patch.object(sm_module.Redis, "from_url")
+    @patch.dict("os.environ", {
+        "SESSION_MANAGER_BACKEND": "redis",
+        "SESSION_TTL_POLICY": "sliding",
+    }, clear=False)
+    def test_sliding_ttl_policy_from_env(self, mock_from_url):
+        fake_client = FakeRedis()
+        mock_from_url.return_value = fake_client
+        manager = build_session_manager_from_env()
+
+        self.assertIsInstance(manager, RedisSessionManager)
+        manager.set_history("s-sliding", "refiner", [{"role": "user", "content": "q"}])
+        key = "nl2sql:session:s-sliding:refiner"
+        fake_client.expiry[key] = 10
+        manager.get_history("s-sliding", "refiner")
+        self.assertEqual(fake_client.expiry[key], 3600)
 
 
 if __name__ == "__main__":

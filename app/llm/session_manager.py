@@ -7,6 +7,7 @@ import logging
 import os
 import threading
 from abc import ABC, abstractmethod
+from json import JSONDecodeError
 from typing import Any, Dict, List, Sequence
 
 from redis import Redis
@@ -48,11 +49,17 @@ class InMemorySessionManager(SessionManager):
             self._sessions[session_id] = {agent: [] for agent in AGENTS}
         return self._sessions[session_id]
 
+    def _validate_agent(self, agent: str) -> None:
+        if agent not in AGENTS:
+            raise ValueError(f"Unknown agent {agent!r}. Expected one of: {', '.join(AGENTS)}")
+
     def get_history(self, session_id: str, agent: str) -> List[Any]:
+        self._validate_agent(agent)
         with self._lock:
             return list(self._get_or_create(session_id)[agent])
 
     def set_history(self, session_id: str, agent: str, history: Sequence[Any]) -> None:
+        self._validate_agent(agent)
         with self._lock:
             self._get_or_create(session_id)[agent] = list(history)
 
@@ -76,10 +83,14 @@ class RedisSessionManager(SessionManager):
         redis_client: Redis,
         ttl_seconds: int = 3600,
         key_prefix: str = "nl2sql:session",
+        sliding_ttl: bool = False,
     ) -> None:
+        if ttl_seconds <= 0:
+            raise ValueError("SESSION_TTL_SECONDS must be a positive integer")
         self._redis = redis_client
         self._ttl_seconds = ttl_seconds
         self._key_prefix = key_prefix
+        self._sliding_ttl = sliding_ttl
 
     def _key(self, session_id: str, agent: str) -> str:
         return f"{self._key_prefix}:{session_id}:{agent}"
@@ -90,11 +101,25 @@ class RedisSessionManager(SessionManager):
 
     def get_history(self, session_id: str, agent: str) -> List[Any]:
         self._validate_agent(agent)
-        value = self._redis.get(self._key(session_id, agent))
+        key = self._key(session_id, agent)
+        value = self._redis.get(key)
         if value is None:
             return []
-        loaded = json.loads(value)
-        return loaded if isinstance(loaded, list) else []
+        try:
+            loaded = json.loads(value)
+        except (JSONDecodeError, TypeError) as exc:
+            logger.warning("Invalid JSON payload in Redis for key %s: %s. Clearing key.", key, exc)
+            self._redis.delete(key)
+            return []
+
+        if not isinstance(loaded, list):
+            logger.warning("Invalid payload type in Redis for key %s: expected list.", key)
+            return []
+
+        if self._sliding_ttl:
+            # Sliding expiration: renew TTL on successful reads.
+            self._redis.expire(key, self._ttl_seconds)
+        return loaded
 
     def set_history(self, session_id: str, agent: str, history: Sequence[Any]) -> None:
         self._validate_agent(agent)
@@ -114,22 +139,47 @@ class RedisSessionManager(SessionManager):
 def build_session_manager_from_env() -> SessionManager:
     """Build the configured session manager backend from environment vars."""
     backend = os.getenv("SESSION_MANAGER_BACKEND", "memory").strip().lower()
+    if backend not in {"memory", "redis"}:
+        logger.warning(
+            "Unknown SESSION_MANAGER_BACKEND=%r. Falling back to in-memory session manager.",
+            backend,
+        )
+        backend = "memory"
 
     if backend == "redis":
         redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-        ttl_seconds = int(os.getenv("SESSION_TTL_SECONDS", "3600"))
+        ttl_raw = os.getenv("SESSION_TTL_SECONDS", "3600")
+        try:
+            ttl_seconds = int(ttl_raw)
+            if ttl_seconds <= 0:
+                raise ValueError("non-positive")
+        except ValueError:
+            logger.warning(
+                "Invalid SESSION_TTL_SECONDS=%r. Falling back to default 3600 seconds.",
+                ttl_raw,
+            )
+            ttl_seconds = 3600
         key_prefix = os.getenv("SESSION_KEY_PREFIX", "nl2sql:session")
+        ttl_policy = os.getenv("SESSION_TTL_POLICY", "absolute").strip().lower()
+        if ttl_policy not in {"absolute", "sliding"}:
+            logger.warning(
+                "Invalid SESSION_TTL_POLICY=%r. Falling back to 'absolute'.",
+                ttl_policy,
+            )
+            ttl_policy = "absolute"
         redis_client = Redis.from_url(redis_url, decode_responses=True)
         logger.info(
-            "Using Redis session manager (url=%s, ttl=%s, key_prefix=%s)",
+            "Using Redis session manager (url=%s, ttl=%s, key_prefix=%s, ttl_policy=%s)",
             redis_url,
             ttl_seconds,
             key_prefix,
+            ttl_policy,
         )
         return RedisSessionManager(
             redis_client=redis_client,
             ttl_seconds=ttl_seconds,
             key_prefix=key_prefix,
+            sliding_ttl=(ttl_policy == "sliding"),
         )
 
     logger.info("Using in-memory session manager")

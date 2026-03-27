@@ -7,6 +7,7 @@ import uuid
 from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request
+from fastapi.responses import Response
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import create_engine
 
@@ -21,6 +22,7 @@ from app.db.connector import (
 from app.db.sql_guard import SQLValidationError, validate_sql_query
 from app.llm.converter import generate_sql, refine_query
 from app.llm.session_manager import SessionManager, build_session_manager_from_env
+from app.observability import MetricsRegistry
 from app.security import (
     AuthSettings,
     decode_access_token,
@@ -32,6 +34,9 @@ from app.security import (
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+DEFAULT_MAX_ROWS = int(os.getenv("MAX_RESULT_ROWS", "1000"))
+DEFAULT_QUERY_TIMEOUT_MS = int(os.getenv("QUERY_TIMEOUT_MS", "15000"))
 
 _default_session_manager = build_session_manager_from_env()
 _audit_logger = build_audit_logger_from_env()
@@ -116,6 +121,16 @@ def _build_nl2sql_router(session_manager: SessionManager) -> APIRouter:
         payload: NL2SQLQueryRequest,
         _auth=Depends(require_scopes("query:execute")),
     ):
+        request_start = time.perf_counter()
+        stage_start = request_start
+        schema_ms = 0.0
+        llm_ms = 0.0
+        sql_ms = 0.0
+        status_code = 200
+        error_type = None
+        error_message = None
+        sql = None
+
         db_model = payload.motor_bd.lower()
         if db_model not in VALID_DB_MODELS:
             raise HTTPException(
