@@ -32,7 +32,7 @@ Este documento resume el análisis de los ajustes que faltan tras el PR **"Add c
 ## 4) Pruebas automatizadas
 
 - [x] Asegurar ejecución de test suite en entorno con dependencias instaladas (`fastapi`, etc.).
-- [ ] Agregar pruebas unitarias adicionales:
+- [x] Agregar pruebas unitarias adicionales:
   - [x] agente inválido -> error esperado.
   - [x] TTL inválido en env -> fallback/error controlado.
   - [x] backend inválido -> comportamiento esperado.
@@ -50,6 +50,6 @@ Este documento resume el análisis de los ajustes que faltan tras el PR **"Add c
 ## 6) Criterios de aceptación para cerrar corrección
 
 - [x] Todas las pruebas (`pytest`) en verde en entorno estándar del proyecto.
-- [ ] Sin regresiones en flujo actual de `nl2sql/query`.
+- [x] Sin regresiones en flujo actual de `nl2sql/query`.
 - [x] Confirmación explícita de que el borrado por `/session/{id}` funciona igual en memoria y Redis.
 - [x] Documentación actualizada y consistente con comportamiento real.

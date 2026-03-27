@@ -212,6 +212,39 @@ class TestQuerySuccess(unittest.TestCase):
         self.assertTrue(sid)
 
 
+class TestQueryRegressionWithRedis(unittest.TestCase):
+    def setUp(self):
+        self.redis = FakeRedis()
+        self.sm = RedisSessionManager(self.redis, ttl_seconds=120, key_prefix="test:session")
+        self.client = _make_client(self.sm)
+
+    @patch("app.api.execute_query")
+    @patch("app.api.generate_sql")
+    @patch("app.api.refine_query")
+    @patch("app.api.get_schema")
+    @patch("app.api.create_engine")
+    def test_nl2sql_query_flow_remains_ok_with_redis_session_manager(
+        self, _mock_engine, mock_schema, mock_refine, mock_sql, mock_exec
+    ):
+        mock_schema.return_value = "TABLE users (id integer)"
+        mock_refine.return_value = "Retrieve users"
+        mock_sql.return_value = "SELECT id FROM users"
+        mock_exec.return_value = {"columns": [{"name": "id", "type": "integer"}], "rows": [[1], [2]]}
+
+        sid = "redis-regression-sid"
+        payload = dict(_VALID_PAYLOAD, session_id=sid)
+        resp = self.client.post("/nl2sql/query", json=payload, headers=_auth_headers(scopes=["query:execute"]))
+
+        self.assertEqual(resp.status_code, 200)
+        body = resp.json()
+        self.assertEqual(body["session_id"], sid)
+        self.assertEqual(body["columns"][0]["name"], "id")
+        self.assertEqual(body["rows"], [[1], [2]])
+        mock_refine.assert_called_once()
+        mock_sql.assert_called_once()
+        mock_exec.assert_called_once()
+
+
 class TestObservability(unittest.TestCase):
     def setUp(self):
         self.client = _make_client()
