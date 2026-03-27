@@ -18,7 +18,7 @@ def _make_client(sm: SessionManager | None = None):
     return TestClient(app)
 
 
-_VALID_PAYLOAD = {
+_VALID_SPANISH_PAYLOAD = {
     "host": "localhost",
     "usuario": "user",
     "contraseña": "secret",
@@ -26,6 +26,16 @@ _VALID_PAYLOAD = {
     "nombre_bd": "testdb",
     "motor_bd": "postgres",
     "consulta_nl": "Show all users",
+}
+
+_VALID_LEGACY_PAYLOAD = {
+    "db_host": "localhost",
+    "db_user": "user",
+    "db_password": "secret",
+    "db_port": 5432,
+    "db_name": "testdb",
+    "db_model": "postgres",
+    "query_natural": "Show all users",
 }
 
 
@@ -44,22 +54,39 @@ class TestQueryValidation(unittest.TestCase):
         self.client = _make_client()
 
     def test_empty_body_returns_422(self):
-        resp = self.client.post("/nl2sql/query", data="", headers={"content-type": "application/json"})
-        self.assertEqual(resp.status_code, 422)
-
-    def test_non_json_body_returns_422(self):
         resp = self.client.post(
-            "/nl2sql/query", data="not-json", headers={"content-type": "application/json"}
+            "/nl2sql/query",
+            content="",
+            headers={"content-type": "application/json"},
         )
         self.assertEqual(resp.status_code, 422)
+        self.assertEqual(resp.json()["error"], "Validation error")
 
     def test_missing_required_fields_returns_422(self):
         resp = self.client.post("/nl2sql/query", json={"host": "localhost"})
         self.assertEqual(resp.status_code, 422)
+        self.assertEqual(resp.json()["error"], "Validation error")
+
+    def test_host_required_for_non_sqlite(self):
+        payload = dict(_VALID_SPANISH_PAYLOAD)
+        payload.pop("host")
+        resp = self.client.post("/nl2sql/query", json=payload)
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn("required", resp.json()["error"])
+
+    def test_host_not_required_for_sqlite(self):
+        payload = dict(_VALID_SPANISH_PAYLOAD, motor_bd="sqlite", host=None)
+        with patch("app.api.create_engine"), patch(
+            "app.api.get_schema", side_effect=Exception("db error")
+        ):
+            resp = self.client.post("/nl2sql/query", json=payload)
+            self.assertEqual(resp.status_code, 503)
 
     def test_valid_db_models_accepted(self):
         for model in ("mysql", "mariadb", "sqlsrv", "sybase", "postgres", "sqlite"):
-            payload = dict(_VALID_PAYLOAD, motor_bd=model)
+            payload = dict(_VALID_SPANISH_PAYLOAD, motor_bd=model)
+            if model == "sqlite":
+                payload["host"] = None
             with patch("app.api.create_engine"), patch(
                 "app.api.get_schema", side_effect=Exception("db error")
             ):
@@ -77,7 +104,7 @@ class TestQuerySuccess(unittest.TestCase):
     @patch("app.api.refine_query")
     @patch("app.api.get_schema")
     @patch("app.api.create_engine")
-    def test_returns_columns_and_rows(
+    def test_returns_columns_and_rows_on_new_endpoint(
         self, _mock_engine, mock_schema, mock_refine, mock_sql, mock_exec
     ):
         mock_schema.return_value = "TABLE users (id integer, name varchar)"
@@ -91,12 +118,29 @@ class TestQuerySuccess(unittest.TestCase):
             "rows": [[1, "Alice"], [2, "Bob"]],
         }
 
-        resp = self.client.post("/nl2sql/query", json=_VALID_PAYLOAD)
+        resp = self.client.post("/nl2sql/query", json=_VALID_SPANISH_PAYLOAD)
         self.assertEqual(resp.status_code, 200)
         data = resp.json()
         self.assertIn("columns", data)
         self.assertIn("rows", data)
         self.assertIn("session_id", data)
+
+    @patch("app.api.execute_query")
+    @patch("app.api.generate_sql")
+    @patch("app.api.refine_query")
+    @patch("app.api.get_schema")
+    @patch("app.api.create_engine")
+    def test_legacy_query_endpoint_kept(
+        self, _mock_engine, mock_schema, mock_refine, mock_sql, mock_exec
+    ):
+        mock_schema.return_value = "TABLE users (id integer, name varchar)"
+        mock_refine.return_value = "Retrieve all users"
+        mock_sql.return_value = "SELECT id, name FROM users"
+        mock_exec.return_value = {"columns": [], "rows": []}
+
+        resp = self.client.post("/query", json=_VALID_LEGACY_PAYLOAD)
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn("session_id", resp.json())
 
     @patch("app.api.execute_query")
     @patch("app.api.generate_sql")
@@ -112,27 +156,12 @@ class TestQuerySuccess(unittest.TestCase):
         mock_exec.return_value = {"columns": [], "rows": []}
 
         sid = "my-session-42"
-        resp = self.client.post("/nl2sql/query", json=dict(_VALID_PAYLOAD, session_id=sid))
+        resp = self.client.post(
+            "/nl2sql/query",
+            json=dict(_VALID_SPANISH_PAYLOAD, session_id=sid),
+        )
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.json()["session_id"], sid)
-
-    @patch("app.api.execute_query")
-    @patch("app.api.generate_sql")
-    @patch("app.api.refine_query")
-    @patch("app.api.get_schema")
-    @patch("app.api.create_engine")
-    def test_new_session_id_generated_when_absent(
-        self, _mock_engine, mock_schema, mock_refine, mock_sql, mock_exec
-    ):
-        mock_schema.return_value = ""
-        mock_refine.return_value = "desc"
-        mock_sql.return_value = "SELECT 1"
-        mock_exec.return_value = {"columns": [], "rows": []}
-
-        resp = self.client.post("/nl2sql/query", json=_VALID_PAYLOAD)
-        self.assertEqual(resp.status_code, 200)
-        sid = resp.json()["session_id"]
-        self.assertTrue(sid)
 
 
 class TestQueryErrors(unittest.TestCase):
@@ -142,8 +171,9 @@ class TestQueryErrors(unittest.TestCase):
     @patch("app.api.create_engine")
     @patch("app.api.get_schema", side_effect=Exception("connection refused"))
     def test_db_error_returns_503(self, _mock_schema, _mock_engine):
-        resp = self.client.post("/nl2sql/query", json=_VALID_PAYLOAD)
+        resp = self.client.post("/nl2sql/query", json=_VALID_SPANISH_PAYLOAD)
         self.assertEqual(resp.status_code, 503)
+        self.assertIn("Database connection error", resp.json()["error"])
 
     @patch("app.api.execute_query")
     @patch("app.api.generate_sql", side_effect=Exception("LLM unavailable"))
@@ -153,8 +183,9 @@ class TestQueryErrors(unittest.TestCase):
     def test_llm_error_returns_503(self, _eng, _schema, _refine, _sql, _exec):
         _schema.return_value = ""
         _refine.return_value = "desc"
-        resp = self.client.post("/nl2sql/query", json=_VALID_PAYLOAD)
+        resp = self.client.post("/nl2sql/query", json=_VALID_SPANISH_PAYLOAD)
         self.assertEqual(resp.status_code, 503)
+        self.assertIn("LLM processing error", resp.json()["error"])
 
     @patch("app.api.execute_query", side_effect=Exception("syntax error"))
     @patch("app.api.generate_sql")
@@ -165,8 +196,9 @@ class TestQueryErrors(unittest.TestCase):
         _schema.return_value = ""
         _refine.return_value = "desc"
         _sql.return_value = "BAD SQL"
-        resp = self.client.post("/nl2sql/query", json=_VALID_PAYLOAD)
+        resp = self.client.post("/nl2sql/query", json=_VALID_SPANISH_PAYLOAD)
         self.assertEqual(resp.status_code, 500)
+        self.assertIn("sql", resp.json())
 
 
 class TestDeleteSession(unittest.TestCase):
@@ -177,6 +209,7 @@ class TestDeleteSession(unittest.TestCase):
     def test_delete_nonexistent_returns_404(self):
         resp = self.client.delete("/session/does-not-exist")
         self.assertEqual(resp.status_code, 404)
+        self.assertIn("not found", resp.json()["error"])
 
     def test_delete_existing_returns_200(self):
         sid = "to-delete"
