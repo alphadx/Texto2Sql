@@ -1,6 +1,7 @@
 """FastAPI application factory and route definitions."""
 
 import logging
+import os
 import uuid
 from typing import Any, Literal
 
@@ -15,6 +16,7 @@ from app.db.connector import (
     execute_query,
     get_schema,
 )
+from app.db.sql_guard import SQLValidationError, validate_sql_query
 from app.llm.converter import generate_sql, refine_query
 from app.llm.session_manager import SessionManager
 
@@ -22,6 +24,9 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 _default_session_manager = SessionManager()
+
+DEFAULT_MAX_ROWS = int(os.getenv("NL2SQL_MAX_ROWS", "1000"))
+DEFAULT_QUERY_TIMEOUT_MS = int(os.getenv("NL2SQL_QUERY_TIMEOUT_MS", "15000"))
 
 
 class NL2SQLQueryRequest(BaseModel):
@@ -130,7 +135,20 @@ def _build_nl2sql_router(session_manager: SessionManager) -> APIRouter:
             raise HTTPException(status_code=503, detail={"error": f"LLM processing error: {exc}"}) from exc
 
         try:
-            result = execute_query(engine, sql)
+            validate_sql_query(sql)
+            result = execute_query(
+                engine,
+                sql,
+                db_model=db_model,
+                max_rows=DEFAULT_MAX_ROWS,
+                timeout_ms=DEFAULT_QUERY_TIMEOUT_MS,
+            )
+        except SQLValidationError as exc:
+            logger.warning("SQL policy validation error: %s", exc)
+            raise HTTPException(
+                status_code=400,
+                detail={"error": str(exc), "sql": sql},
+            ) from exc
         except Exception as exc:  # noqa: BLE001
             logger.error("SQL execution error: %s", exc)
             raise HTTPException(

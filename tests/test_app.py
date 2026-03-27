@@ -164,9 +164,43 @@ class TestQueryErrors(unittest.TestCase):
     def test_sql_error_returns_500(self, _eng, _schema, _refine, _sql, _exec):
         _schema.return_value = ""
         _refine.return_value = "desc"
-        _sql.return_value = "BAD SQL"
+        _sql.return_value = "SELECT * FROM users"
         resp = self.client.post("/nl2sql/query", json=_VALID_PAYLOAD)
         self.assertEqual(resp.status_code, 500)
+
+    @patch("app.api.execute_query")
+    @patch("app.api.generate_sql")
+    @patch("app.api.refine_query")
+    @patch("app.api.get_schema")
+    @patch("app.api.create_engine")
+    def test_non_select_sql_returns_400(self, _eng, _schema, _refine, _sql, _exec):
+        _schema.return_value = ""
+        _refine.return_value = "desc"
+        _sql.return_value = "DELETE FROM users"
+
+        resp = self.client.post("/nl2sql/query", json=_VALID_PAYLOAD)
+        self.assertEqual(resp.status_code, 400)
+        _exec.assert_not_called()
+
+
+class TestSqlGuard(unittest.TestCase):
+    def test_apply_limit_for_postgres_when_absent(self):
+        from app.db.sql_guard import apply_row_limit
+
+        sql = apply_row_limit("SELECT * FROM users", db_model="postgres", max_rows=100)
+        self.assertEqual(sql, "SELECT * FROM users LIMIT 100")
+
+    def test_apply_top_for_sqlsrv_when_absent(self):
+        from app.db.sql_guard import apply_row_limit
+
+        sql = apply_row_limit("SELECT DISTINCT id FROM users", db_model="sqlsrv", max_rows=50)
+        self.assertEqual(sql, "SELECT DISTINCT TOP 50 id FROM users")
+
+    def test_rejects_multiple_statements(self):
+        from app.db.sql_guard import SQLValidationError, validate_sql_query
+
+        with self.assertRaises(SQLValidationError):
+            validate_sql_query("SELECT 1; SELECT 2")
 
 
 class TestDeleteSession(unittest.TestCase):
