@@ -1,16 +1,16 @@
-"""WSGI entry point consumed by Gunicorn.
+"""ASGI entry point consumed by Gunicorn/Uvicorn.
 
 Usage:
-    gunicorn --config gunicorn.conf.py wsgi:application
+    gunicorn --config gunicorn.conf.py wsgi:app
 """
 
 from dotenv import load_dotenv
 
 load_dotenv()
 
-from app.main import create_app  # noqa: E402 (import after env load)
-
-application = create_app()
+from app.api import app  # noqa: E402 (import after env load)
 
 if __name__ == "__main__":
-    application.run()
+    import uvicorn
+
+    uvicorn.run("wsgi:app", host="0.0.0.0", port=5000)
