@@ -58,4 +58,4 @@ Este documento resume el análisis de los ajustes que faltan tras el PR **"Add c
 
 - [x] Mover definición oficial de proveedor/API key/modelo al instalador principal (`scripts/install-main.sh`).
 - [x] Permitir override por request en `POST /nl2sql/query` para consumidores con otro proveedor (`llm_provider`, `llm_model`, `llm_api_key`, `llm_base_url`).
-- [ ] Validar en CI que la imagen del demo levanta correctamente y que `sakila` quedó cargada (`SELECT COUNT(*) FROM film;`).
+- [x] Validar en CI que la imagen del demo levanta correctamente y que `sakila` quedó cargada (`SELECT COUNT(*) FROM film;`).

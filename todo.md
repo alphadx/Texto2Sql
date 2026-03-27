@@ -6,3 +6,4 @@
 
 - [x] Instalación principal: definir proveedor/API key/modelo vía `make install-main-config`.
 - [x] API principal: aceptar override de proveedor/modelo/api_key/base_url por request.
+- [x] CI demo: agregar smoke test para build + validación de carga `sakila.film`.

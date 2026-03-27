@@ -334,6 +334,7 @@ Se agregó un demo en `demo/` con comando especial de Make:
 make install-main-config  # define proveedor/key/modelo oficiales en .env del programa principal
 make demo-install         # configura endpoint/credenciales runtime del demo
 make demo-up              # build + up del contenedor demo (valida demo/.env)
+make demo-smoke           # smoke test: build + valida que sakila.film tenga filas
 ```
 
 Detalles en `demo/README.md`.
@@ -361,3 +362,6 @@ Además, `POST /nl2sql/query` permite sobreescribir por request (útil para cons
 - `llm_model`
 - `llm_api_key`
 - `llm_base_url`
+
+
+Se agregó workflow de CI `demo-smoke` para validar build del demo y carga de `sakila`.

@@ -14,6 +14,7 @@ Este demo levanta **un solo contenedor Docker** con:
 make install-main-config  # define proveedor/modelo/api key en el programa principal
 make demo-install         # crea demo/.env para runtime del contenedor demo
 make demo-up
+make demo-smoke          # valida que sakila se haya cargado correctamente
 ```
 
 La app queda en: <http://localhost:8080>

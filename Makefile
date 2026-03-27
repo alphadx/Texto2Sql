@@ -1,7 +1,7 @@
 PYTHON ?= python
 PIP ?= pip
 
-.PHONY: install-dev install-main-config test demo-install demo-check-env demo-build demo-up demo-down demo-logs
+.PHONY: install-dev install-main-config test demo-install demo-check-env demo-build demo-up demo-down demo-logs demo-smoke
 
 install-dev:
 	$(PIP) install -r requirements.txt -r requirements-dev.txt
@@ -30,3 +30,7 @@ demo-check-env:
 
 install-main-config:
 	bash scripts/install-main.sh
+
+
+demo-smoke:
+	bash scripts/demo-smoke.sh
