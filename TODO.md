@@ -14,11 +14,11 @@ Este documento resume el análisis de los ajustes que faltan tras el PR **"Add c
 ## 2) Robustez de `RedisSessionManager`
 
 - [ ] Validar configuración al inicio:
-  - `SESSION_TTL_SECONDS` debe ser entero positivo.
-  - Backend desconocido en `SESSION_MANAGER_BACKEND` debe generar warning claro o fallback explícito documentado.
+  - [x] `SESSION_TTL_SECONDS` debe ser entero positivo.
+  - [x] Backend desconocido en `SESSION_MANAGER_BACKEND` debe generar warning claro o fallback explícito documentado.
 - [ ] Manejar payload JSON corrupto en Redis (`json.loads`) sin romper el flujo:
-  - Registrar warning.
-  - Retornar historial vacío y/o limpiar clave inválida según decisión.
+  - [x] Registrar warning.
+  - [x] Retornar historial vacío y/o limpiar clave inválida según decisión.
 - [ ] Confirmar política de expiración:
   - Definir si el TTL es “absolute” (solo en `set`) o “sliding” (renovar también al `get`).
   - Implementar comportamiento elegido de forma explícita y documentada.
@@ -33,10 +33,10 @@ Este documento resume el análisis de los ajustes que faltan tras el PR **"Add c
 
 - [ ] Asegurar ejecución de test suite en entorno con dependencias instaladas (`fastapi`, etc.).
 - [ ] Agregar pruebas unitarias adicionales:
-  - agente inválido -> error esperado.
-  - TTL inválido en env -> fallback/error controlado.
-  - backend inválido -> comportamiento esperado.
-  - payload JSON inválido en Redis.
+  - [x] agente inválido -> error esperado.
+  - [x] TTL inválido en env -> fallback/error controlado.
+  - [x] backend inválido -> comportamiento esperado.
+  - [x] payload JSON inválido en Redis.
 - [ ] Agregar prueba de integración mínima del endpoint `DELETE /session/{id}` con backend Redis simulado.
 
 ## 5) Documentación y operación

@@ -224,7 +224,7 @@ class TestObservability(unittest.TestCase):
         mock_exec.return_value = {"columns": [], "rows": []}
 
         payload = dict(_VALID_PAYLOAD, session_id="session-observability")
-        resp = self.client.post("/nl2sql/query", json=payload)
+        resp = self.client.post("/nl2sql/query", json=payload, headers=_auth_headers(scopes=["query:execute"]))
 
         self.assertEqual(resp.status_code, 200)
         mock_persist.assert_called_once()
@@ -387,6 +387,10 @@ class TestSessionManager(unittest.TestCase):
     def test_clear_non_existing_session(self):
         self.assertFalse(self.sm.clear_session("nope"))
 
+    def test_invalid_agent_raises_value_error(self):
+        with self.assertRaises(ValueError):
+            self.sm.get_history("s4", "unknown-agent")
+
 
 class TestRedisSessionManager(unittest.TestCase):
     def setUp(self):
@@ -409,6 +413,20 @@ class TestRedisSessionManager(unittest.TestCase):
         self.assertTrue(self.sm.session_exists(sid))
         self.assertTrue(self.sm.clear_session(sid))
         self.assertFalse(self.sm.session_exists(sid))
+
+    def test_invalid_json_payload_returns_empty_and_deletes_key(self):
+        sid = "redis-s3"
+        key = "test:session:redis-s3:refiner"
+        self.redis.store[key] = "{invalid-json"
+
+        history = self.sm.get_history(sid, "refiner")
+
+        self.assertEqual(history, [])
+        self.assertNotIn(key, self.redis.store)
+
+    def test_invalid_agent_raises_value_error(self):
+        with self.assertRaises(ValueError):
+            self.sm.set_history("s5", "unknown-agent", [])
 
 
 class TestSessionManagerEnvFactory(unittest.TestCase):
@@ -434,6 +452,25 @@ class TestSessionManagerEnvFactory(unittest.TestCase):
     def test_build_memory_manager_from_env(self):
         manager = build_session_manager_from_env()
         self.assertIsInstance(manager, InMemorySessionManager)
+
+    @patch.dict("os.environ", {"SESSION_MANAGER_BACKEND": "bogus"}, clear=False)
+    def test_invalid_backend_falls_back_to_memory(self):
+        manager = build_session_manager_from_env()
+        self.assertIsInstance(manager, InMemorySessionManager)
+
+    @patch.object(sm_module.Redis, "from_url")
+    @patch.dict("os.environ", {
+        "SESSION_MANAGER_BACKEND": "redis",
+        "SESSION_TTL_SECONDS": "not-an-int",
+    }, clear=False)
+    def test_invalid_ttl_falls_back_to_default(self, mock_from_url):
+        fake_client = FakeRedis()
+        mock_from_url.return_value = fake_client
+        manager = build_session_manager_from_env()
+
+        self.assertIsInstance(manager, RedisSessionManager)
+        manager.set_history("s-default-ttl", "refiner", [])
+        self.assertEqual(fake_client.expiry["nl2sql:session:s-default-ttl:refiner"], 3600)
 
 
 if __name__ == "__main__":
