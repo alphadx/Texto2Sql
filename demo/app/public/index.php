@@ -42,6 +42,10 @@
         <option value="sqlsrv">sqlsrv</option>
       </select>
       <input id="ttl_minutes" placeholder="TTL minutos" />
+      <input id="llm_provider" placeholder="LLM provider (opcional)" />
+      <input id="llm_model" placeholder="LLM model (opcional)" />
+      <input id="llm_base_url" placeholder="LLM base URL (opcional)" />
+      <input id="llm_api_key" placeholder="LLM API key (opcional)" />
     </div>
   </details>
 
@@ -64,6 +68,10 @@ const defaults = {
   db_password: localStorage.getItem('db_password') || 'demo1234',
   db_engine: localStorage.getItem('db_engine') || 'mysql',
   ttl_minutes: localStorage.getItem('ttl_minutes') || '360',
+  llm_provider: localStorage.getItem('llm_provider') || '',
+  llm_model: localStorage.getItem('llm_model') || '',
+  llm_base_url: localStorage.getItem('llm_base_url') || '',
+  llm_api_key: localStorage.getItem('llm_api_key') || '',
 };
 
 Object.entries(defaults).forEach(([k, v]) => {
@@ -101,7 +109,7 @@ function renderHistory(history) {
 }
 
 function gatherParams() {
-  const keys = ['db_host','db_port','db_name','db_user','db_password','db_engine','ttl_minutes'];
+  const keys = ['db_host','db_port','db_name','db_user','db_password','db_engine','ttl_minutes','llm_provider','llm_model','llm_base_url','llm_api_key'];
   const params = {};
   keys.forEach(k => {
     const v = (document.getElementById(k)?.value || '').trim();

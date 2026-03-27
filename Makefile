@@ -1,7 +1,7 @@
 PYTHON ?= python
 PIP ?= pip
 
-.PHONY: install-dev test demo-install demo-check-env demo-build demo-up demo-down demo-logs
+.PHONY: install-dev install-main-config test demo-install demo-check-env demo-build demo-up demo-down demo-logs
 
 install-dev:
 	$(PIP) install -r requirements.txt -r requirements-dev.txt
@@ -27,3 +27,6 @@ demo-logs:
 
 demo-check-env:
 	@test -f demo/.env || (echo "Falta demo/.env. Ejecuta: make demo-install" && exit 1)
+
+install-main-config:
+	bash scripts/install-main.sh

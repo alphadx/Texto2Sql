@@ -331,10 +331,33 @@ El target `test` instala `requirements.txt` + `requirements-dev.txt` y luego eje
 Se agregó un demo en `demo/` con comando especial de Make:
 
 ```bash
-make demo-install   # solicita provider/API key/modelo + parámetros DB/TTL
-make demo-up        # build + up del contenedor demo (valida demo/.env)
+make install-main-config  # define proveedor/key/modelo oficiales en .env del programa principal
+make demo-install         # configura endpoint/credenciales runtime del demo
+make demo-up              # build + up del contenedor demo (valida demo/.env)
 ```
 
 Detalles en `demo/README.md`.
 
-Parámetros dinámicos en la vista: host/puerto/db/usuario/password/engine y TTL por sesión.
+Parámetros dinámicos en la vista: host/puerto/db/usuario/password/engine, TTL y overrides LLM por request.
+
+## Configuración principal del proveedor LLM
+
+Las definiciones oficiales de **compañía/proveedor**, **API key** y **modelo** ahora pertenecen a la instalación principal:
+
+```bash
+make install-main-config
+```
+
+Este asistente escribe `.env` con:
+
+- `LLM_PROVIDER`
+- `OPENAI_API_KEY`
+- `OPENAI_MODEL`
+- `OPENAI_BASE_URL`
+
+Además, `POST /nl2sql/query` permite sobreescribir por request (útil para consumidores que usan otra compañía):
+
+- `llm_provider`
+- `llm_model`
+- `llm_api_key`
+- `llm_base_url`

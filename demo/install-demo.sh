@@ -12,18 +12,10 @@ prompt_default() {
 }
 
 echo "Configuración de demo Texto2SQL"
+echo "Nota: proveedor/modelo/api key LLM se configuran en la instalación principal o se envían por request."
 
-API_PROVIDER=$(prompt_default "Compañía/API provider (ej: openai, anthropic, azure-openai)" "openai")
-
-read -rsp "API key (obligatoria): " API_KEY
-echo
-if [[ -z "${API_KEY}" ]]; then
-  echo "ERROR: La API key no puede quedar vacía." >&2
-  exit 1
-fi
-
-API_MODEL=$(prompt_default "Modelo (ej: gpt-4.1-mini)" "gpt-4.1-mini")
 API_URL=$(prompt_default "URL API NL2SQL" "http://host.docker.internal:5000/nl2sql/query")
+API_BEARER=$(prompt_default "Bearer token para la API (si aplica)" "")
 CHAT_TTL=$(prompt_default "TTL historial en minutos" "360")
 
 if ! [[ "$CHAT_TTL" =~ ^[0-9]+$ ]] || [[ "$CHAT_TTL" -le 0 ]]; then
@@ -40,10 +32,8 @@ echo
 DB_PASS=${DB_PASS:-demo1234}
 
 cat > "$ENV_FILE" <<ENVVARS
-NL2SQL_API_PROVIDER=${API_PROVIDER}
-NL2SQL_API_KEY=${API_KEY}
-NL2SQL_MODEL=${API_MODEL}
 NL2SQL_API_URL=${API_URL}
+NL2SQL_API_KEY=${API_BEARER}
 CHAT_CACHE_TTL_MINUTES=${CHAT_TTL}
 CHAT_MAX_MESSAGES=40
 MYSQL_DEMO_USER=${DB_USER}

@@ -54,6 +54,10 @@ class NL2SQLQueryRequest(BaseModel):
     motor_bd: Literal["mysql", "sqlsrv", "mariadb", "sybase", "postgres", "sqlite"]
     consulta_nl: str
     session_id: str | None = None
+    llm_provider: str | None = None
+    llm_model: str | None = None
+    llm_api_key: str | None = None
+    llm_base_url: str | None = None
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -67,6 +71,10 @@ class NL2SQLQueryRequest(BaseModel):
             "motor_bd": "postgres",
             "consulta_nl": "Muestra todos los usuarios",
             "session_id": "my-session-42",
+            "llm_provider": "openai",
+            "llm_model": "gpt-4.1-mini",
+            "llm_api_key": "sk-demo",
+            "llm_base_url": "https://api.openai.com/v1",
         }},
     )
 
@@ -178,12 +186,20 @@ def _build_nl2sql_router(session_manager: SessionManager) -> APIRouter:
                 schema_ms = (time.perf_counter() - stage_start) * 1000
                 stage_start = time.perf_counter()
 
+            llm_options = {
+                "provider": payload.llm_provider,
+                "model": payload.llm_model,
+                "api_key": payload.llm_api_key,
+                "base_url": payload.llm_base_url,
+            }
+
             try:
                 refined = refine_query(
                     session_id=session_id,
                     natural_query=payload.consulta_nl,
                     schema=schema,
                     session_manager=session_manager,
+                    llm_options=llm_options,
                 )
                 sql = generate_sql(
                     session_id=session_id,
@@ -191,6 +207,7 @@ def _build_nl2sql_router(session_manager: SessionManager) -> APIRouter:
                     schema=schema,
                     db_model=db_model,
                     session_manager=session_manager,
+                    llm_options=llm_options,
                 )
             except Exception as exc:  # noqa: BLE001
                 logger.error("LLM error: %s", exc)

@@ -11,7 +11,8 @@ Este demo levanta **un solo contenedor Docker** con:
 ## Uso rápido
 
 ```bash
-make demo-install   # crea demo/.env (solicita provider + key + modelo + DB + TTL)
+make install-main-config  # define proveedor/modelo/api key en el programa principal
+make demo-install         # crea demo/.env para runtime del contenedor demo
 make demo-up
 ```
 
@@ -22,15 +23,14 @@ La app queda en: <http://localhost:8080>
 - La vista incluye sección **Parámetros del test** para cambiar en runtime:
   - host, puerto, DB, usuario, password y engine
   - TTL del historial
+  - proveedor/modelo/api key/base_url LLM (opcionales por request)
 - Estos valores se guardan en `localStorage`.
-- En cada mensaje, el backend reenvía esas credenciales a la API NL2SQL y guarda la respuesta (incluyendo tabla) en el historial de sesión.
+- En cada mensaje, el backend reenvía esos parámetros a la API NL2SQL y guarda la respuesta (incluyendo tabla) en el historial de sesión.
 
 ## Variables claves (`demo/.env`)
 
-- `NL2SQL_API_PROVIDER`
-- `NL2SQL_API_KEY`
-- `NL2SQL_MODEL`
-- `NL2SQL_API_URL`
+- `NL2SQL_API_URL` (endpoint del programa principal)
+- `NL2SQL_API_KEY` (Bearer para la API principal, si aplica)
 - `CHAT_CACHE_TTL_MINUTES` (default 360)
 - `CHAT_MAX_MESSAGES` (default 40)
 

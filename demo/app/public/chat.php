@@ -78,8 +78,10 @@ function extract_columns(array $json): array {
 function call_api(string $message, array $params): array {
     $apiUrl = $_ENV['NL2SQL_API_URL'] ?? getenv('NL2SQL_API_URL') ?: 'http://host.docker.internal:5000/nl2sql/query';
     $apiToken = $_ENV['NL2SQL_API_KEY'] ?? getenv('NL2SQL_API_KEY') ?: '';
-    $apiProvider = $_ENV['NL2SQL_API_PROVIDER'] ?? getenv('NL2SQL_API_PROVIDER') ?: 'openai';
-    $apiModel = $_ENV['NL2SQL_MODEL'] ?? getenv('NL2SQL_MODEL') ?: 'gpt-4.1-mini';
+    $apiProvider = $params['llm_provider'] ?? ($_ENV['NL2SQL_API_PROVIDER'] ?? getenv('NL2SQL_API_PROVIDER') ?: 'openai');
+    $apiModel = $params['llm_model'] ?? ($_ENV['NL2SQL_MODEL'] ?? getenv('NL2SQL_MODEL') ?: 'gpt-4.1-mini');
+    $llmApiKey = $params['llm_api_key'] ?? ($_ENV['LLM_API_KEY'] ?? getenv('LLM_API_KEY') ?: null);
+    $llmBaseUrl = $params['llm_base_url'] ?? ($_ENV['LLM_BASE_URL'] ?? getenv('LLM_BASE_URL') ?: null);
 
     $payload = [
         'host' => $params['db_host'] ?? ($_ENV['MYSQL_HOST'] ?? getenv('MYSQL_HOST') ?: '127.0.0.1'),
@@ -92,6 +94,8 @@ function call_api(string $message, array $params): array {
         'session_id' => 'demo-' . md5($message . microtime(true)),
         'llm_provider' => $apiProvider,
         'llm_model' => $apiModel,
+        'llm_api_key' => $llmApiKey,
+        'llm_base_url' => $llmBaseUrl,
     ];
 
     $ch = curl_init($apiUrl);

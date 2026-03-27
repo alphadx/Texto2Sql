@@ -56,8 +56,6 @@ Este documento resume el análisis de los ajustes que faltan tras el PR **"Add c
 
 ## TODO demo Docker NL2SQL
 
-- [ ] Definir la compañía/proveedor API oficial para testing del demo.
-- [ ] Definir API key definitiva para ambiente de prueba.
-- [ ] Definir modelo LLM oficial para el test.
-- [x] El script de instalación del demo (`demo/install-demo.sh`) solicita esos datos al usuario.
+- [x] Mover definición oficial de proveedor/API key/modelo al instalador principal (`scripts/install-main.sh`).
+- [x] Permitir override por request en `POST /nl2sql/query` para consumidores con otro proveedor (`llm_provider`, `llm_model`, `llm_api_key`, `llm_base_url`).
 - [ ] Validar en CI que la imagen del demo levanta correctamente y que `sakila` quedó cargada (`SELECT COUNT(*) FROM film;`).
