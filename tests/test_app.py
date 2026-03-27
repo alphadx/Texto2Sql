@@ -7,15 +7,45 @@ run without any live services.
 import unittest
 from unittest.mock import patch
 
+from app.llm import session_manager as sm_module
+
 from fastapi.testclient import TestClient
 
-from app.llm.session_manager import SessionManager
+from app.llm.session_manager import InMemorySessionManager, RedisSessionManager, build_session_manager_from_env
 from app.main import create_app
 
 
-def _make_client(sm: SessionManager | None = None):
+def _make_client(sm=None):
     app = create_app(session_manager=sm)
     return TestClient(app)
+
+
+class FakeRedis:
+    def __init__(self):
+        self.store = {}
+        self.expiry = {}
+
+    def get(self, key):
+        return self.store.get(key)
+
+    def set(self, key, value, ex=None):
+        self.store[key] = value
+        self.expiry[key] = ex
+        return True
+
+    def exists(self, key):
+        return int(key in self.store)
+
+    def delete(self, *keys):
+        deleted = 0
+        for key in keys:
+            if key in self.store:
+                deleted += 1
+                del self.store[key]
+                self.expiry.pop(key, None)
+        return deleted
+
+
 
 
 _VALID_PAYLOAD = {
@@ -69,7 +99,7 @@ class TestQueryValidation(unittest.TestCase):
 
 class TestQuerySuccess(unittest.TestCase):
     def setUp(self):
-        self.sm = SessionManager()
+        self.sm = InMemorySessionManager()
         self.client = _make_client(self.sm)
 
     @patch("app.api.execute_query")
@@ -205,7 +235,7 @@ class TestSqlGuard(unittest.TestCase):
 
 class TestDeleteSession(unittest.TestCase):
     def setUp(self):
-        self.sm = SessionManager()
+        self.sm = InMemorySessionManager()
         self.client = _make_client(self.sm)
 
     def test_delete_nonexistent_returns_404(self):
@@ -222,7 +252,7 @@ class TestDeleteSession(unittest.TestCase):
 
 class TestSessionManager(unittest.TestCase):
     def setUp(self):
-        self.sm = SessionManager()
+        self.sm = InMemorySessionManager()
 
     def test_empty_history_returns_empty_list(self):
         self.assertEqual(self.sm.get_history("new", "refiner"), [])
@@ -244,6 +274,54 @@ class TestSessionManager(unittest.TestCase):
 
     def test_clear_non_existing_session(self):
         self.assertFalse(self.sm.clear_session("nope"))
+
+
+class TestRedisSessionManager(unittest.TestCase):
+    def setUp(self):
+        self.redis = FakeRedis()
+        self.sm = RedisSessionManager(self.redis, ttl_seconds=120, key_prefix="test:session")
+
+    def test_set_history_serializes_json_and_sets_ttl(self):
+        sid = "redis-s1"
+        history = [{"role": "user", "content": "hola"}]
+        self.sm.set_history(sid, "refiner", history)
+
+        redis_key = "test:session:redis-s1:refiner"
+        self.assertIn(redis_key, self.redis.store)
+        self.assertEqual(self.redis.expiry[redis_key], 120)
+        self.assertEqual(self.sm.get_history(sid, "refiner"), history)
+
+    def test_session_exists_and_clear_session(self):
+        sid = "redis-s2"
+        self.sm.set_history(sid, "refiner", [{"role": "user", "content": "q"}])
+        self.assertTrue(self.sm.session_exists(sid))
+        self.assertTrue(self.sm.clear_session(sid))
+        self.assertFalse(self.sm.session_exists(sid))
+
+
+class TestSessionManagerEnvFactory(unittest.TestCase):
+    @patch.object(sm_module.Redis, "from_url")
+    @patch.dict("os.environ", {
+        "SESSION_MANAGER_BACKEND": "redis",
+        "REDIS_URL": "redis://cache:6379/2",
+        "SESSION_TTL_SECONDS": "1800",
+        "SESSION_KEY_PREFIX": "my:prefix",
+    }, clear=False)
+    def test_build_redis_manager_from_env(self, mock_from_url):
+        fake_client = FakeRedis()
+        mock_from_url.return_value = fake_client
+
+        manager = build_session_manager_from_env()
+
+        self.assertIsInstance(manager, RedisSessionManager)
+        mock_from_url.assert_called_once_with("redis://cache:6379/2", decode_responses=True)
+        manager.set_history("s", "refiner", [])
+        self.assertEqual(fake_client.expiry["my:prefix:s:refiner"], 1800)
+
+    @patch.dict("os.environ", {"SESSION_MANAGER_BACKEND": "memory"}, clear=False)
+    def test_build_memory_manager_from_env(self):
+        manager = build_session_manager_from_env()
+        self.assertIsInstance(manager, InMemorySessionManager)
 
 
 if __name__ == "__main__":
