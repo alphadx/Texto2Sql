@@ -74,3 +74,13 @@ Métricas base compatibles con Prometheus disponibles en `GET /metrics`:
 - `nl2sql_requests_total`
 - `nl2sql_request_latency_ms_count` / `nl2sql_request_latency_ms_sum`
 - `nl2sql_errors_total{error_type="..."}`
+
+## Ejecución de pruebas
+
+Para asegurar ejecución en un entorno con dependencias instaladas:
+
+```bash
+make test
+```
+
+El target `test` instala `requirements.txt` + `requirements-dev.txt` y luego ejecuta `pytest tests/test_app.py`.
