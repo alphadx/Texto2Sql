@@ -18,12 +18,12 @@ from app.db.connector import (
 )
 from app.db.sql_guard import SQLValidationError, validate_sql_query
 from app.llm.converter import generate_sql, refine_query
-from app.llm.session_manager import SessionManager
+from app.llm.session_manager import SessionManager, build_session_manager_from_env
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-_default_session_manager = SessionManager()
+_default_session_manager = build_session_manager_from_env()
 
 DEFAULT_MAX_ROWS = int(os.getenv("NL2SQL_MAX_ROWS", "1000"))
 DEFAULT_QUERY_TIMEOUT_MS = int(os.getenv("NL2SQL_QUERY_TIMEOUT_MS", "15000"))
