@@ -34,6 +34,7 @@ function build_default_state(int $ttlMinutes): array {
         'expires_at' => time() + ($ttlMinutes * 60),
         'ttl_minutes' => $ttlMinutes,
         'history' => [],
+        'context_signature' => null,
     ];
 }
 
@@ -54,6 +55,7 @@ function load_session(string $cacheDir, string $sessionId, int $defaultTtlMinute
         $data['history'] = [];
     }
     $data['ttl_minutes'] = sanitize_ttl((int)($data['ttl_minutes'] ?? $defaultTtlMinutes), $defaultTtlMinutes);
+    $data['context_signature'] = $data['context_signature'] ?? null;
     return $data;
 }
 
@@ -75,11 +77,12 @@ function extract_columns(array $json): array {
     }, $columns);
 }
 
-function call_api(string $message, array $params): array {
-    $apiUrl = $_ENV['NL2SQL_API_URL'] ?? getenv('NL2SQL_API_URL') ?: 'http://host.docker.internal:5000/nl2sql/query';
-    $apiToken = $_ENV['NL2SQL_API_KEY'] ?? getenv('NL2SQL_API_KEY') ?: '';
-    $apiProvider = $params['llm_provider'] ?? ($_ENV['NL2SQL_API_PROVIDER'] ?? getenv('NL2SQL_API_PROVIDER') ?: 'openai');
-    $apiModel = $params['llm_model'] ?? ($_ENV['NL2SQL_MODEL'] ?? getenv('NL2SQL_MODEL') ?: 'gpt-4.1-mini');
+function call_api(string $message, string $sessionId, array $params): array {
+    $apiUrl = $params['api_url'] ?? ($_ENV['NL2SQL_API_URL'] ?? getenv('NL2SQL_API_URL') ?: 'http://host.docker.internal:5000/nl2sql/query');
+    $apiToken = $params['api_bearer'] ?? ($_ENV['NL2SQL_API_KEY'] ?? getenv('NL2SQL_API_KEY') ?: '');
+
+    $apiProvider = $params['llm_provider'] ?? ($_ENV['NL2SQL_API_PROVIDER'] ?? getenv('NL2SQL_API_PROVIDER') ?: null);
+    $apiModel = $params['llm_model'] ?? ($_ENV['NL2SQL_MODEL'] ?? getenv('NL2SQL_MODEL') ?: null);
     $llmApiKey = $params['llm_api_key'] ?? ($_ENV['LLM_API_KEY'] ?? getenv('LLM_API_KEY') ?: null);
     $llmBaseUrl = $params['llm_base_url'] ?? ($_ENV['LLM_BASE_URL'] ?? getenv('LLM_BASE_URL') ?: null);
 
@@ -91,7 +94,7 @@ function call_api(string $message, array $params): array {
         'nombre_bd' => $params['db_name'] ?? ($_ENV['MYSQL_DEMO_DB'] ?? getenv('MYSQL_DEMO_DB') ?: 'sakila'),
         'motor_bd' => $params['db_engine'] ?? 'mysql',
         'consulta_nl' => $message,
-        'session_id' => 'demo-' . md5($message . microtime(true)),
+        'session_id' => $sessionId,
         'llm_provider' => $apiProvider,
         'llm_model' => $apiModel,
         'llm_api_key' => $llmApiKey,
@@ -152,16 +155,24 @@ if ($method === 'POST') {
     }
 
     $params = is_array($input['params'] ?? null) ? $input['params'] : [];
-    $requestedTtl = (int)($params['ttl_minutes'] ?? $defaultTtlMinutes);
+    $requestedTtl = isset($params['ttl_minutes']) ? (int)$params['ttl_minutes'] : $defaultTtlMinutes;
     $ttlMinutes = sanitize_ttl($requestedTtl, $defaultTtlMinutes);
+    $contextSignature = isset($params['context_signature']) ? (string)$params['context_signature'] : null;
 
     $state = load_session($cacheDir, $sessionId, $defaultTtlMinutes);
+
+    // Si el contexto de DB/LLM cambia, limpiamos el historial para evitar mezclar hilos.
+    if ($contextSignature && $state['context_signature'] && $contextSignature !== $state['context_signature']) {
+        $state['history'] = [];
+    }
+
+    $state['context_signature'] = $contextSignature;
     $state['ttl_minutes'] = $ttlMinutes;
     $state['expires_at'] = time() + ($ttlMinutes * 60);
 
     $state['history'][] = ['role' => 'user', 'text' => $message, 'ts' => time()];
 
-    $result = call_api($message, $params);
+    $result = call_api($message, $sessionId, $params);
     $assistantText = isset($result['error']) && $result['error']
         ? $result['error']
         : ('SQL: ' . ($result['sql_generado'] ?? 'N/A'));
@@ -187,6 +198,7 @@ if ($method === 'POST') {
         'ok' => true,
         'session_id' => $sessionId,
         'ttl_minutes' => $ttlMinutes,
+        'context_signature' => $state['context_signature'],
         'history' => $state['history'],
     ]);
     exit;
@@ -198,5 +210,6 @@ $state = load_session($cacheDir, $sessionId, $defaultTtlMinutes);
 echo json_encode([
     'session_id' => $sessionId,
     'ttl_minutes' => $state['ttl_minutes'] ?? $defaultTtlMinutes,
+    'context_signature' => $state['context_signature'] ?? null,
     'history' => $state['history'] ?? [],
 ]);

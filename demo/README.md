@@ -18,14 +18,28 @@ make demo-up
 
 La app queda en: <http://localhost:8080>
 
-## Parámetros y comportamiento dinámico
+## Parámetros en vista (editables en runtime)
 
-- La vista incluye sección **Parámetros del test** para cambiar en runtime:
-  - host, puerto, DB, usuario, password y engine
-  - TTL del historial
-  - proveedor/modelo/api key/base_url LLM (opcionales por request)
-- Estos valores se guardan en `localStorage`.
-- En cada mensaje, el backend reenvía esos parámetros a la API NL2SQL y guarda la respuesta (incluyendo tabla) en el historial de sesión.
+La vista de demo ahora expone **todos los parámetros relevantes** para ejecutar la API:
+
+- URL de API y Bearer token
+- Credenciales y conexión DB (`host`, `port`, `name`, `user`, `password`, `engine`)
+- Parámetros LLM (`provider`, `model`, `base_url`, `api_key`)
+- `ttl_minutes`
+
+Comportamiento:
+
+- Si el usuario deja campos vacíos, el backend usa los valores por defecto (env del demo o defaults internos).
+- Si el usuario ingresa valores, se envían en el request y tienen prioridad.
+- Si cambia el contexto (endpoint + DB + proveedor/modelo/base_url LLM), la vista rota automáticamente `session_id` y empieza un nuevo hilo.
+
+## Ambigüedad resuelta en esta iteración
+
+Se definió explícitamente qué cambio de parámetros rompe el hilo conversacional:
+
+- `api_url`, `db_engine`, `db_host`, `db_port`, `db_name`, `db_user`, `llm_provider`, `llm_model`, `llm_base_url`
+
+Cuando cambia cualquiera, se crea una nueva sesión. Así evitamos mezclar contexto viejo con nueva configuración.
 
 ## Variables claves (`demo/.env`)
 

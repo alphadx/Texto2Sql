@@ -338,7 +338,7 @@ make demo-up              # build + up del contenedor demo (valida demo/.env)
 
 Detalles en `demo/README.md`.
 
-Parámetros dinámicos en la vista: host/puerto/db/usuario/password/engine, TTL y overrides LLM por request.
+Parámetros dinámicos en la vista: URL/API bearer, host/puerto/db/usuario/password/engine, TTL y overrides LLM por request; al cambiar contexto DB/LLM/API se rota sesión automáticamente.
 
 ## Configuración principal del proveedor LLM
 

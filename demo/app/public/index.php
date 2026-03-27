@@ -6,19 +6,19 @@
   <title>Texto2SQL Demo Chat</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 0; background: #111827; color: #f9fafb; }
-    .wrap { max-width: 980px; margin: 0 auto; padding: 20px; }
+    .wrap { max-width: 1080px; margin: 0 auto; padding: 20px; }
     .chat { background: #1f2937; border-radius: 10px; padding: 16px; min-height: 360px; }
     .msg { margin-bottom: 12px; padding: 10px; border-radius: 8px; }
     .user { background: #374151; }
     .bot { background: #0f766e; }
     .meta { font-size: 12px; opacity: 0.8; margin-top: 4px; }
     .cfg { background: #0b1220; border-radius: 10px; padding: 12px; margin-bottom: 12px; }
-    .cfg-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .cfg-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
     .cfg input, .cfg select { width: 100%; box-sizing: border-box; }
     form { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-top: 12px; }
     input, button, select { padding: 10px; border-radius: 8px; border: none; }
     button { cursor: pointer; }
-    .status { font-size: 13px; opacity: 0.8; margin-top: 8px; }
+    .status { font-size: 13px; opacity: 0.85; margin-top: 8px; }
     table { width: 100%; border-collapse: collapse; margin-top: 8px; background: #0b1220; }
     th, td { border: 1px solid #374151; padding: 8px; font-size: 13px; }
   </style>
@@ -26,26 +26,29 @@
 <body>
 <div class="wrap">
   <h1>Demo NL→SQL</h1>
-  <p>Una sola página de chat. Cada respuesta conserva su tabla y se guarda en caché por TTL (default 360 min).</p>
+  <p>Todos los parámetros de ejecución son editables. Si cambias contexto DB/LLM, se inicia nueva sesión automáticamente.</p>
 
-  <details class="cfg">
-    <summary><strong>Parámetros del test</strong> (conexión DB + TTL)</summary>
+  <details class="cfg" open>
+    <summary><strong>Parámetros de ejecución API</strong></summary>
     <div class="cfg-grid" style="margin-top:10px;">
-      <input id="db_host" placeholder="DB host" />
-      <input id="db_port" placeholder="DB port" />
-      <input id="db_name" placeholder="DB name" />
-      <input id="db_user" placeholder="DB user" />
-      <input id="db_password" placeholder="DB password" />
+      <input id="api_url" placeholder="API URL (opcional)" />
+      <input id="api_bearer" type="password" placeholder="API Bearer (opcional)" />
+      <input id="db_host" placeholder="DB host (opcional)" />
+      <input id="db_port" placeholder="DB port (opcional)" />
+      <input id="db_name" placeholder="DB name (opcional)" />
+      <input id="db_user" placeholder="DB user (opcional)" />
+      <input id="db_password" type="password" placeholder="DB password (opcional)" />
       <select id="db_engine">
+        <option value="">DB engine (default)</option>
         <option value="mysql">mysql</option>
         <option value="postgres">postgres</option>
         <option value="sqlsrv">sqlsrv</option>
       </select>
-      <input id="ttl_minutes" placeholder="TTL minutos" />
       <input id="llm_provider" placeholder="LLM provider (opcional)" />
       <input id="llm_model" placeholder="LLM model (opcional)" />
       <input id="llm_base_url" placeholder="LLM base URL (opcional)" />
-      <input id="llm_api_key" placeholder="LLM API key (opcional)" />
+      <input id="llm_api_key" type="password" placeholder="LLM API key (opcional)" />
+      <input id="ttl_minutes" placeholder="TTL minutos (opcional)" />
     </div>
   </details>
 
@@ -57,21 +60,33 @@
   <div id="status" class="status"></div>
 </div>
 <script>
-const sessionId = localStorage.getItem('demoSession') || crypto.randomUUID();
+function newSessionId() {
+  return crypto.randomUUID();
+}
+
+let sessionId = localStorage.getItem('demoSession') || newSessionId();
 localStorage.setItem('demoSession', sessionId);
 
+const persistentKeys = [
+  'api_url', 'db_host', 'db_port', 'db_name', 'db_user', 'db_engine',
+  'llm_provider', 'llm_model', 'llm_base_url', 'ttl_minutes'
+];
+const sensitiveKeys = ['api_bearer', 'db_password', 'llm_api_key'];
+
 const defaults = {
-  db_host: localStorage.getItem('db_host') || '127.0.0.1',
-  db_port: localStorage.getItem('db_port') || '3306',
-  db_name: localStorage.getItem('db_name') || 'sakila',
-  db_user: localStorage.getItem('db_user') || 'demo',
-  db_password: localStorage.getItem('db_password') || 'demo1234',
-  db_engine: localStorage.getItem('db_engine') || 'mysql',
-  ttl_minutes: localStorage.getItem('ttl_minutes') || '360',
+  api_url: localStorage.getItem('api_url') || '',
+  api_bearer: '',
+  db_host: localStorage.getItem('db_host') || '',
+  db_port: localStorage.getItem('db_port') || '',
+  db_name: localStorage.getItem('db_name') || '',
+  db_user: localStorage.getItem('db_user') || '',
+  db_password: '',
+  db_engine: localStorage.getItem('db_engine') || '',
   llm_provider: localStorage.getItem('llm_provider') || '',
   llm_model: localStorage.getItem('llm_model') || '',
   llm_base_url: localStorage.getItem('llm_base_url') || '',
-  llm_api_key: localStorage.getItem('llm_api_key') || '',
+  llm_api_key: '',
+  ttl_minutes: localStorage.getItem('ttl_minutes') || '',
 };
 
 Object.entries(defaults).forEach(([k, v]) => {
@@ -108,18 +123,56 @@ function renderHistory(history) {
   chat.scrollTop = chat.scrollHeight;
 }
 
+function contextSignature(params) {
+  // Ambigüedad resuelta: reiniciar hilo cuando cambia endpoint+DB+modelo/proveedor LLM.
+  const signaturePayload = {
+    api_url: params.api_url || '',
+    db_engine: params.db_engine || '',
+    db_host: params.db_host || '',
+    db_port: params.db_port || '',
+    db_name: params.db_name || '',
+    db_user: params.db_user || '',
+    llm_provider: params.llm_provider || '',
+    llm_model: params.llm_model || '',
+    llm_base_url: params.llm_base_url || '',
+  };
+  return btoa(unescape(encodeURIComponent(JSON.stringify(signaturePayload))));
+}
+
 function gatherParams() {
-  const keys = ['db_host','db_port','db_name','db_user','db_password','db_engine','ttl_minutes','llm_provider','llm_model','llm_base_url','llm_api_key'];
+  const keys = [...persistentKeys, ...sensitiveKeys];
   const params = {};
+
   keys.forEach(k => {
     const v = (document.getElementById(k)?.value || '').trim();
     if (v !== '') {
       params[k] = v;
-      localStorage.setItem(k, v);
+      if (persistentKeys.includes(k)) {
+        localStorage.setItem(k, v);
+      }
     }
   });
-  params.ttl_minutes = Number(params.ttl_minutes || 360);
+
+  if (params.ttl_minutes && Number(params.ttl_minutes) > 0) {
+    params.ttl_minutes = Number(params.ttl_minutes);
+  } else {
+    delete params.ttl_minutes;
+  }
+
+  params.context_signature = contextSignature(params);
   return params;
+}
+
+function maybeRotateSession(params) {
+  const currentSignature = params.context_signature;
+  const lastSignature = localStorage.getItem('lastContextSignature') || '';
+  if (currentSignature !== lastSignature) {
+    sessionId = newSessionId();
+    localStorage.setItem('demoSession', sessionId);
+    localStorage.setItem('lastContextSignature', currentSignature);
+    return true;
+  }
+  return false;
 }
 
 function setBusy(isBusy, text='') {
@@ -131,7 +184,7 @@ async function fetchHistory() {
   const res = await fetch(`chat.php?session_id=${encodeURIComponent(sessionId)}`);
   const data = await res.json();
   renderHistory(data.history || []);
-  const ttl = data.ttl_minutes || defaults.ttl_minutes;
+  const ttl = data.ttl_minutes || 'default';
   document.getElementById('status').textContent = `session=${sessionId} · ttl=${ttl} min`;
 }
 
@@ -141,7 +194,10 @@ document.getElementById('chatForm').addEventListener('submit', async (e) => {
   if (!message) return;
   document.getElementById('message').value = '';
 
-  setBusy(true, 'Consultando API...');
+  const params = gatherParams();
+  const rotated = maybeRotateSession(params);
+
+  setBusy(true, rotated ? 'Contexto cambió: iniciando nueva sesión...' : 'Consultando API...');
   try {
     await fetch('chat.php', {
       method: 'POST',
@@ -149,7 +205,7 @@ document.getElementById('chatForm').addEventListener('submit', async (e) => {
       body: JSON.stringify({
         session_id: sessionId,
         message,
-        params: gatherParams(),
+        params,
       })
     });
     await fetchHistory();
