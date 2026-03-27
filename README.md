@@ -47,6 +47,9 @@ Variables para Redis:
 - `REDIS_URL` (default `redis://localhost:6379/0`)
 - `SESSION_TTL_SECONDS` (default `3600`)
 - `SESSION_KEY_PREFIX` (default `nl2sql:session`)
+- `SESSION_TTL_POLICY` (default `absolute`):
+  - `absolute`: el TTL solo se aplica en escrituras (`set_history`).
+  - `sliding`: el TTL se renueva en cada lectura válida (`get_history`).
 
 Cada historial se serializa en JSON y se almacena con TTL para expiración automática. También se puede borrar explícitamente con `DELETE /session/{session_id}`.
 

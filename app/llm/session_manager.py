@@ -83,12 +83,14 @@ class RedisSessionManager(SessionManager):
         redis_client: Redis,
         ttl_seconds: int = 3600,
         key_prefix: str = "nl2sql:session",
+        sliding_ttl: bool = False,
     ) -> None:
         if ttl_seconds <= 0:
             raise ValueError("SESSION_TTL_SECONDS must be a positive integer")
         self._redis = redis_client
         self._ttl_seconds = ttl_seconds
         self._key_prefix = key_prefix
+        self._sliding_ttl = sliding_ttl
 
     def _key(self, session_id: str, agent: str) -> str:
         return f"{self._key_prefix}:{session_id}:{agent}"
@@ -113,6 +115,10 @@ class RedisSessionManager(SessionManager):
         if not isinstance(loaded, list):
             logger.warning("Invalid payload type in Redis for key %s: expected list.", key)
             return []
+
+        if self._sliding_ttl:
+            # Sliding expiration: renew TTL on successful reads.
+            self._redis.expire(key, self._ttl_seconds)
         return loaded
 
     def set_history(self, session_id: str, agent: str, history: Sequence[Any]) -> None:
@@ -154,17 +160,26 @@ def build_session_manager_from_env() -> SessionManager:
             )
             ttl_seconds = 3600
         key_prefix = os.getenv("SESSION_KEY_PREFIX", "nl2sql:session")
+        ttl_policy = os.getenv("SESSION_TTL_POLICY", "absolute").strip().lower()
+        if ttl_policy not in {"absolute", "sliding"}:
+            logger.warning(
+                "Invalid SESSION_TTL_POLICY=%r. Falling back to 'absolute'.",
+                ttl_policy,
+            )
+            ttl_policy = "absolute"
         redis_client = Redis.from_url(redis_url, decode_responses=True)
         logger.info(
-            "Using Redis session manager (url=%s, ttl=%s, key_prefix=%s)",
+            "Using Redis session manager (url=%s, ttl=%s, key_prefix=%s, ttl_policy=%s)",
             redis_url,
             ttl_seconds,
             key_prefix,
+            ttl_policy,
         )
         return RedisSessionManager(
             redis_client=redis_client,
             ttl_seconds=ttl_seconds,
             key_prefix=key_prefix,
+            sliding_ttl=(ttl_policy == "sliding"),
         )
 
     logger.info("Using in-memory session manager")

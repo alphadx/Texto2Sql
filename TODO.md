@@ -20,8 +20,8 @@ Este documento resume el análisis de los ajustes que faltan tras el PR **"Add c
   - [x] Registrar warning.
   - [x] Retornar historial vacío y/o limpiar clave inválida según decisión.
 - [ ] Confirmar política de expiración:
-  - Definir si el TTL es “absolute” (solo en `set`) o “sliding” (renovar también al `get`).
-  - Implementar comportamiento elegido de forma explícita y documentada.
+  - [x] Definir si el TTL es “absolute” (solo en `set`) o “sliding” (renovar también al `get`).
+  - [x] Implementar comportamiento elegido de forma explícita y documentada.
 
 ## 3) Operación de borrado `/session/{id}`
 

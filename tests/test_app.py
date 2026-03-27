@@ -54,6 +54,12 @@ class FakeRedis:
                 self.expiry.pop(key, None)
         return deleted
 
+    def expire(self, key, seconds):
+        if key not in self.store:
+            return False
+        self.expiry[key] = seconds
+        return True
+
 
 
 
@@ -428,6 +434,18 @@ class TestRedisSessionManager(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.sm.set_history("s5", "unknown-agent", [])
 
+    def test_sliding_ttl_renews_expiry_on_get(self):
+        sid = "redis-s4"
+        self.sm = RedisSessionManager(self.redis, ttl_seconds=30, key_prefix="test:session", sliding_ttl=True)
+        self.sm.set_history(sid, "refiner", [{"role": "user", "content": "hola"}])
+
+        key = "test:session:redis-s4:refiner"
+        self.redis.expiry[key] = 5
+
+        history = self.sm.get_history(sid, "refiner")
+        self.assertEqual(history, [{"role": "user", "content": "hola"}])
+        self.assertEqual(self.redis.expiry[key], 30)
+
 
 class TestSessionManagerEnvFactory(unittest.TestCase):
     @patch.object(sm_module.Redis, "from_url")
@@ -471,6 +489,23 @@ class TestSessionManagerEnvFactory(unittest.TestCase):
         self.assertIsInstance(manager, RedisSessionManager)
         manager.set_history("s-default-ttl", "refiner", [])
         self.assertEqual(fake_client.expiry["nl2sql:session:s-default-ttl:refiner"], 3600)
+
+    @patch.object(sm_module.Redis, "from_url")
+    @patch.dict("os.environ", {
+        "SESSION_MANAGER_BACKEND": "redis",
+        "SESSION_TTL_POLICY": "sliding",
+    }, clear=False)
+    def test_sliding_ttl_policy_from_env(self, mock_from_url):
+        fake_client = FakeRedis()
+        mock_from_url.return_value = fake_client
+        manager = build_session_manager_from_env()
+
+        self.assertIsInstance(manager, RedisSessionManager)
+        manager.set_history("s-sliding", "refiner", [{"role": "user", "content": "q"}])
+        key = "nl2sql:session:s-sliding:refiner"
+        fake_client.expiry[key] = 10
+        manager.get_history("s-sliding", "refiner")
+        self.assertEqual(fake_client.expiry[key], 3600)
 
 
 if __name__ == "__main__":
