@@ -28,6 +28,9 @@ _default_session_manager = build_session_manager_from_env()
 DEFAULT_MAX_ROWS = int(os.getenv("NL2SQL_MAX_ROWS", "1000"))
 DEFAULT_QUERY_TIMEOUT_MS = int(os.getenv("NL2SQL_QUERY_TIMEOUT_MS", "15000"))
 
+DEFAULT_MAX_ROWS = int(os.getenv("NL2SQL_MAX_ROWS", "1000"))
+DEFAULT_QUERY_TIMEOUT_MS = int(os.getenv("NL2SQL_QUERY_TIMEOUT_MS", "15000"))
+
 
 class NL2SQLQueryRequest(BaseModel):
     """Request schema for NL→SQL execution."""
