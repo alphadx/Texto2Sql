@@ -33,7 +33,7 @@ if [ ! -f /var/lib/mysql/.sakila_loaded ]; then
   touch /var/lib/mysql/.sakila_loaded
 fi
 
-if [ ! -d /opt/demo/yii-demo ]; then
+if [ "${INSTALL_YII_ON_BOOT:-false}" = "true" ] && [ ! -d /opt/demo/yii-demo ]; then
   /usr/local/bin/install-yii || true
 fi
 

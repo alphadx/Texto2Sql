@@ -48,6 +48,7 @@ Cuando cambia cualquiera, se crea una nueva sesión. Así evitamos mezclar conte
 - `NL2SQL_API_KEY` (Bearer para la API principal, si aplica)
 - `CHAT_CACHE_TTL_MINUTES` (default 360)
 - `CHAT_MAX_MESSAGES` (default 40)
+- `INSTALL_YII_ON_BOOT` (`false` default para acelerar startup; `true` si quieres crear skeleton Yii3 al boot)
 
 ## Flujo
 

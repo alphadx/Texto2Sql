@@ -1,6 +1,7 @@
 FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
+ENV INSTALL_YII_ON_BOOT=false
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \

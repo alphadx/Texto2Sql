@@ -30,20 +30,20 @@ echo "[demo-smoke] building and starting demo container..."
 docker compose -f "$COMPOSE_FILE" up -d --build
 
 echo "[demo-smoke] waiting for mysql to become ready..."
-for _ in {1..90}; do
-  if docker compose -f "$COMPOSE_FILE" exec -T texto2sql-demo mysqladmin ping -uroot --silent >/dev/null 2>&1; then
+for _ in {1..180}; do
+  if docker compose -f "$COMPOSE_FILE" exec -T texto2sql-demo mysql -udemo -pdemo1234 -Nse "SELECT 1" >/dev/null 2>&1; then
     break
   fi
   sleep 2
 done
 
-if ! docker compose -f "$COMPOSE_FILE" exec -T texto2sql-demo mysqladmin ping -uroot --silent >/dev/null 2>&1; then
+if ! docker compose -f "$COMPOSE_FILE" exec -T texto2sql-demo mysql -udemo -pdemo1234 -Nse "SELECT 1" >/dev/null 2>&1; then
   echo "[demo-smoke] mysql did not become ready in time" >&2
   exit 1
 fi
 
 echo "[demo-smoke] verifying sakila dataset..."
-FILM_COUNT=$(docker compose -f "$COMPOSE_FILE" exec -T texto2sql-demo mysql -uroot -Nse "SELECT COUNT(*) FROM sakila.film;")
+FILM_COUNT=$(docker compose -f "$COMPOSE_FILE" exec -T texto2sql-demo mysql -udemo -pdemo1234 -Nse "SELECT COUNT(*) FROM sakila.film;")
 if [[ -z "$FILM_COUNT" || "$FILM_COUNT" -le 0 ]]; then
   echo "[demo-smoke] invalid sakila.film count: ${FILM_COUNT:-empty}" >&2
   exit 1

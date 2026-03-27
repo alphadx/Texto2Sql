@@ -365,3 +365,6 @@ Además, `POST /nl2sql/query` permite sobreescribir por request (útil para cons
 
 
 Se agregó workflow de CI `demo-smoke` para validar build del demo y carga de `sakila`.
+
+
+Tip demo CI: `INSTALL_YII_ON_BOOT=false` por defecto para evitar timeouts en arranque del smoke test.
