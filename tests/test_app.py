@@ -5,6 +5,7 @@ run without any live services.
 """
 
 import os
+import threading
 import unittest
 from datetime import UTC, datetime, timedelta
 from unittest.mock import patch
@@ -363,6 +364,35 @@ class TestDeleteSessionRedis(unittest.TestCase):
 
         resp = self.client.delete(f"/session/{sid}", headers=_auth_headers(roles=["admin"]))
         self.assertEqual(resp.status_code, 404)
+
+    def test_delete_with_concurrent_writes_keeps_consistent_state(self):
+        sid = "redis-delete-race"
+        self.sm.set_history(sid, "refiner", [{"role": "user", "content": "seed"}])
+        self.sm.set_history(sid, "sql_agent", [{"role": "assistant", "content": "SELECT 1"}])
+
+        start = threading.Event()
+
+        def writer():
+            start.wait()
+            for i in range(25):
+                self.sm.set_history(sid, "refiner", [{"role": "user", "content": f"race-{i}"}])
+                self.sm.set_history(sid, "sql_agent", [{"role": "assistant", "content": f"SELECT {i}"}])
+
+        t = threading.Thread(target=writer)
+        t.start()
+        start.set()
+
+        first_delete = self.client.delete(f"/session/{sid}", headers=_auth_headers(roles=["admin"]))
+        self.assertEqual(first_delete.status_code, 200)
+
+        t.join()
+
+        # Según el interleaving, puede haberse recreado la sesión tras el primer delete.
+        second_delete = self.client.delete(f"/session/{sid}", headers=_auth_headers(roles=["admin"]))
+        self.assertIn(second_delete.status_code, (200, 404))
+        if second_delete.status_code == 200:
+            third_delete = self.client.delete(f"/session/{sid}", headers=_auth_headers(roles=["admin"]))
+            self.assertEqual(third_delete.status_code, 404)
 
 
 class TestAuth(unittest.TestCase):

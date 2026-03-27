@@ -27,7 +27,7 @@ Este documento resume el análisis de los ajustes que faltan tras el PR **"Add c
 
 - [x] Confirmar borrado completo por `session_id` para ambos agentes (`refiner`, `sql_agent`).
 - [x] Revisar semántica de respuesta 404/200 cuando la sesión expiró por TTL justo antes del delete.
-- [ ] Añadir/ajustar pruebas para condiciones de carrera básicas (borrado + escrituras concurrentes).
+- [x] Añadir/ajustar pruebas para condiciones de carrera básicas (borrado + escrituras concurrentes).
 
 ## 4) Pruebas automatizadas
 
