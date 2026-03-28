@@ -30,7 +30,19 @@ echo "[demo-smoke] building and starting demo container..."
 docker compose -f "$COMPOSE_FILE" up -d --build
 
 echo "[demo-smoke] waiting for mysql to become ready..."
-for _ in {1..180}; do
+for _ in {1..240}; do
+  if [[ "$(docker compose -f "$COMPOSE_FILE" ps -q texto2sql-demo | wc -l)" -eq 0 ]]; then
+    echo "[demo-smoke] container not found" >&2
+    docker compose -f "$COMPOSE_FILE" logs || true
+    exit 1
+  fi
+
+  if ! docker compose -f "$COMPOSE_FILE" ps texto2sql-demo | grep -q "Up"; then
+    echo "[demo-smoke] container exited before mysql became ready" >&2
+    docker compose -f "$COMPOSE_FILE" logs texto2sql-demo || true
+    exit 1
+  fi
+
   if docker compose -f "$COMPOSE_FILE" exec -T texto2sql-demo mysql -udemo -pdemo1234 -Nse "SELECT 1" >/dev/null 2>&1; then
     break
   fi
@@ -39,6 +51,7 @@ done
 
 if ! docker compose -f "$COMPOSE_FILE" exec -T texto2sql-demo mysql -udemo -pdemo1234 -Nse "SELECT 1" >/dev/null 2>&1; then
   echo "[demo-smoke] mysql did not become ready in time" >&2
+  docker compose -f "$COMPOSE_FILE" logs texto2sql-demo || true
   exit 1
 fi
 
