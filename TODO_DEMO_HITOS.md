@@ -24,16 +24,16 @@
 Definir explícitamente qué contrato soporta el demo y cómo se valida.
 
 ### Tareas
-- [ ] Documentar contrato mínimo esperado de `/nl2sql/query` consumido por el demo.
-- [ ] Crear matriz de compatibilidad (campos legacy vs actuales) para respuestas exitosas y de error.
-- [ ] Registrar decisiones de fallback (ej. texto cuando no hay SQL en respuesta).
+- [x] Documentar contrato mínimo esperado de `/nl2sql/query` consumido por el demo. _(2026-03-28)_
+- [x] Crear matriz de compatibilidad (campos legacy vs actuales) para respuestas exitosas y de error. _(2026-03-28)_
+- [x] Registrar decisiones de fallback (ej. texto cuando no hay SQL en respuesta). _(2026-03-28)_
 
 ### Entregables
-- [ ] Sección nueva en `demo/README.md`: “Contrato de integración del Demo”.
-- [ ] Tabla de mapeo de campos (legacy/current) y ejemplos JSON.
+- [x] Sección nueva en `demo/README.md`: “Contrato de integración del Demo”. _(2026-03-28)_
+- [x] Tabla de mapeo de campos (legacy/current) y ejemplos JSON. _(2026-03-28)_
 
 ### Criterio de aceptación
-- [ ] Cualquier cambio de contrato en API puede validarse contra una checklist concreta antes de merge.
+- [x] Cualquier cambio de contrato en API puede validarse contra una checklist concreta antes de merge. _(2026-03-28)_
 
 ---
 
@@ -43,21 +43,21 @@ Definir explícitamente qué contrato soporta el demo y cómo se valida.
 Asegurar parsing resiliente y comportamiento predecible en éxito/error.
 
 ### Tareas
-- [ ] Estandarizar internamente una sola estructura canónica (`columnas`, `filas`, `error`, `sql_generado`).
-- [ ] Homologar extracción de errores incluyendo:
-  - [ ] `error`
-  - [ ] `errores`
-  - [ ] `detail.error`
-  - [ ] errores no JSON / body inválido
-- [ ] Diferenciar mensajes por tipo de falla (conectividad, auth, validación, ejecución SQL).
-- [ ] Mejorar trazabilidad en historial de chat (guardar HTTP status y timestamp de request externo).
+- [x] Estandarizar internamente una sola estructura canónica (`columnas`, `filas`, `error`, `sql_generado`). _(2026-03-28)_
+- [x] Homologar extracción de errores incluyendo: _(2026-03-28)_
+  - [x] `error`
+  - [x] `errores`
+  - [x] `detail.error`
+  - [x] errores no JSON / body inválido
+- [x] Diferenciar mensajes por tipo de falla (conectividad, auth, validación, ejecución SQL). _(2026-03-28)_
+- [x] Mejorar trazabilidad en historial de chat (guardar HTTP status y timestamp de request externo). _(2026-03-28)_
 
 ### Entregables
-- [ ] Refactor incremental en `demo/app/public/chat.php` con funciones pequeñas y testeables.
-- [ ] Casos de prueba de parsing en script/fixture (si no hay framework PHP tests, al menos harness reproducible).
+- [x] Refactor incremental en `demo/app/public/chat.php` con funciones pequeñas y testeables. _(2026-03-28)_
+- [x] Casos de prueba de parsing en script/fixture (si no hay framework PHP tests, al menos harness reproducible). _(2026-03-28)_
 
 ### Criterio de aceptación
-- [ ] En respuestas 2xx/4xx/5xx el demo siempre renderiza un estado claro (tabla o error explicativo) sin romper la sesión.
+- [x] En respuestas 2xx/4xx/5xx el demo siempre renderiza un estado claro (tabla o error explicativo) sin romper la sesión. _(2026-03-28, validado por harness y contrato canónico)_
 
 ---
 
@@ -67,14 +67,14 @@ Asegurar parsing resiliente y comportamiento predecible en éxito/error.
 Alinear la UI del demo con capacidades reales del backend para reducir errores de operador.
 
 ### Tareas
-- [ ] Cambiar `llm_provider` a componente guiado (datalist/select) + ayuda contextual.
-- [ ] Añadir placeholders sugeridos por proveedor para `llm_model` y `llm_base_url`.
-- [ ] Validaciones de cliente para motores BD soportados y puertos sugeridos.
-- [ ] Indicador visual cuando cambiar parámetros rota sesión por `context_signature`.
+- [x] Cambiar `llm_provider` a componente guiado (datalist/select) + ayuda contextual. _(2026-03-28)_
+- [x] Añadir placeholders sugeridos por proveedor para `llm_model` y `llm_base_url`. _(2026-03-28)_
+- [x] Validaciones de cliente para motores BD soportados y puertos sugeridos. _(2026-03-28)_
+- [x] Indicador visual cuando cambiar parámetros rota sesión por `context_signature`. _(2026-03-28)_
 
 ### Entregables
-- [ ] Ajustes en `demo/app/public/index.php` (inputs, hints, validaciones ligeras).
-- [ ] Documentación de “cómo cambiar de proveedor/modelo sin perder contexto inesperadamente”.
+- [x] Ajustes en `demo/app/public/index.php` (inputs, hints, validaciones ligeras). _(2026-03-28)_
+- [x] Documentación de “cómo cambiar de proveedor/modelo sin perder contexto inesperadamente”. _(2026-03-28)_
 
 ### Criterio de aceptación
 - [ ] Un usuario nuevo puede ejecutar una consulta end-to-end con configuración correcta en < 3 minutos.
@@ -87,15 +87,15 @@ Alinear la UI del demo con capacidades reales del backend para reducir errores d
 Tener pruebas reproducibles del flujo real del demo, no solo del backend Python.
 
 ### Tareas
-- [ ] Extender `scripts/demo-smoke.sh` para validar también endpoint del chat PHP (`GET` y `POST`).
-- [ ] Agregar escenario con API mock/stub para testear UI adapter sin depender de llaves LLM reales.
-- [ ] Definir estrategia de ejecución en CI:
-  - [ ] job con Docker (full smoke)
-  - [ ] job sin Docker (checks mínimos + linters)
+- [x] Extender `scripts/demo-smoke.sh` para validar también endpoint del chat PHP (`GET` y `POST`). _(2026-03-28)_
+- [x] Agregar escenario con API mock/stub para testear UI adapter sin depender de llaves LLM reales. _(2026-03-28)_
+- [x] Definir estrategia de ejecución en CI: _(2026-03-28)_
+  - [x] job con Docker (full smoke)
+  - [x] job sin Docker (checks mínimos + linters)
 
 ### Entregables
-- [ ] Smoke ampliado con aserciones HTTP y JSON schema básico.
-- [ ] Instrucciones claras para ejecutar localmente y en CI.
+- [x] Smoke ampliado con aserciones HTTP y JSON schema básico. _(2026-03-28)_
+- [x] Instrucciones claras para ejecutar localmente y en CI. _(2026-03-28)_
 
 ### Criterio de aceptación
 - [ ] El PR falla automáticamente si el demo deja de renderizar filas/errores esperados.
@@ -108,13 +108,13 @@ Tener pruebas reproducibles del flujo real del demo, no solo del backend Python.
 Reducir tiempo de diagnóstico cuando el demo “falla” por causas externas.
 
 ### Tareas
-- [ ] Añadir correlation id por mensaje demo → API.
-- [ ] Registrar en logs del demo: endpoint llamado, status, latencia y tipo de error (sin exponer secretos).
-- [ ] Definir troubleshooting guide (top 10 errores frecuentes y resolución).
+- [x] Añadir correlation id por mensaje demo → API. _(2026-03-28)_
+- [x] Registrar en logs del demo: endpoint llamado, status, latencia y tipo de error (sin exponer secretos). _(2026-03-28)_
+- [x] Definir troubleshooting guide (top 10 errores frecuentes y resolución). _(2026-03-28)_
 
 ### Entregables
-- [ ] Logging estructurado mínimo en PHP.
-- [ ] Sección “Troubleshooting Demo” en `demo/README.md`.
+- [x] Logging estructurado mínimo en PHP. _(2026-03-28)_
+- [x] Sección “Troubleshooting Demo” en `demo/README.md`. _(2026-03-28)_
 
 ### Criterio de aceptación
 - [ ] Soporte puede clasificar la mayoría de incidentes en < 10 minutos usando logs.
@@ -127,14 +127,14 @@ Reducir tiempo de diagnóstico cuando el demo “falla” por causas externas.
 Evitar exposición accidental de secretos y reducir superficie de ataque del entorno demo.
 
 ### Tareas
-- [ ] Revisar manejo de secretos en UI (no persistir API keys en localStorage).
-- [ ] Revisar política CORS/headers/cookies según modo de despliegue.
-- [ ] Enmascarar y sanitizar campos sensibles en errores y logs.
-- [ ] Documentar límites de uso del demo (no productivo / fines de validación).
+- [x] Revisar manejo de secretos en UI (no persistir API keys en localStorage). _(2026-03-28)_
+- [x] Revisar política CORS/headers/cookies según modo de despliegue. _(2026-03-28)_
+- [x] Enmascarar y sanitizar campos sensibles en errores y logs. _(2026-03-28)_
+- [x] Documentar límites de uso del demo (no productivo / fines de validación). _(2026-03-28)_
 
 ### Entregables
-- [ ] Checklist de seguridad del demo.
-- [ ] Ajustes mínimos de hardening en contenedor y app PHP.
+- [x] Checklist de seguridad del demo. _(2026-03-28)_
+- [x] Ajustes mínimos de hardening en contenedor y app PHP. _(2026-03-28, headers + CORS configurable en app PHP)_
 
 ### Criterio de aceptación
 - [ ] Ningún secreto queda persistido o logueado en texto plano por defecto.
@@ -147,31 +147,31 @@ Evitar exposición accidental de secretos y reducir superficie de ataque del ent
 Cerrar ciclo con proceso claro para futuros cambios de modelo/proveedor/API.
 
 ### Tareas
-- [ ] Plantilla de PR con sección obligatoria “Impacto en DEMO”.
-- [ ] Checklist de release para cambios en contrato API o providers.
-- [ ] Owner técnico del demo y cadencia de revisión.
+- [x] Plantilla de PR con sección obligatoria “Impacto en DEMO”. _(2026-03-28)_
+- [x] Checklist de release para cambios en contrato API o providers. _(2026-03-28)_
+- [x] Owner técnico del demo y cadencia de revisión. _(2026-03-28)_
 
 ### Entregables
-- [ ] `docs/` con proceso liviano de change management.
-- [ ] Definición de Done para “Demo Compatible”.
+- [x] `docs/` con proceso liviano de change management. _(2026-03-28)_
+- [x] Definición de Done para “Demo Compatible”. _(2026-03-28)_
 
 ### Criterio de aceptación
-- [ ] Cada release puede declararse compatible/incompatible con evidencia de tests + checklist.
+- [x] Cada release puede declararse compatible/incompatible con evidencia de tests + checklist. _(2026-03-28, vía template PR + workflow de smoke)_
 
 ---
 
 ## Backlog priorizado (rápido)
 
 ### Prioridad P0
-- [ ] Matriz de contrato Demo↔API y documentación mínima.
-- [ ] Smoke E2E que valide `chat.php` (GET/POST) además de MySQL sakila.
+- [x] Matriz de contrato Demo↔API y documentación mínima. _(cerrado 2026-03-28)_
+- [x] Smoke E2E que valide `chat.php` (GET/POST) además de MySQL sakila. _(cerrado 2026-03-28)_
 
 ### Prioridad P1
-- [ ] UX guiada por proveedor/modelo y mensajes de error por categoría.
-- [ ] Logging mínimo con latencia/status sin secretos.
+- [x] UX guiada por proveedor/modelo y mensajes de error por categoría. _(cerrado 2026-03-28)_
+- [x] Logging mínimo con latencia/status sin secretos. _(cerrado 2026-03-28)_
 
 ### Prioridad P2
-- [ ] Hardening adicional y gobernanza de cambios.
+- [x] Hardening adicional y gobernanza de cambios. _(cerrado 2026-03-28)_
 
 ---
 
@@ -185,3 +185,9 @@ Cerrar ciclo con proceso claro para futuros cambios de modelo/proveedor/API.
 
 ## Nota de trabajo colaborativo
 Iremos marcando checkboxes por hito y registrando fecha + PR asociado en cada cierre parcial.
+
+### Estado global (2026-03-28)
+- Hitos 0, 1, 2, 3, 4, 5 y 6 implementados.
+- Smokes Docker y no-Docker disponibles para validación continua.
+- Gobernanza de cambios activa con template PR + checklist de compatibilidad.
+- Criterios de aceptación operativos (tiempo de onboarding, MTTR y validación sostenida en releases) quedan en seguimiento.
