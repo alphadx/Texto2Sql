@@ -19,6 +19,20 @@
     input, button, select { padding: 10px; border-radius: 8px; border: none; }
     button { cursor: pointer; }
     .status { font-size: 13px; opacity: 0.85; margin-top: 8px; }
+    .hint { font-size: 12px; opacity: 0.8; margin-top: 6px; color: #d1d5db; }
+    .alert {
+      margin-top: 10px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 13px;
+      background: #1e3a8a;
+      color: #dbeafe;
+      display: none;
+    }
+    .alert.warn {
+      background: #7c2d12;
+      color: #ffedd5;
+    }
     table { width: 100%; border-collapse: collapse; margin-top: 8px; background: #0b1220; }
     th, td { border: 1px solid #374151; padding: 8px; font-size: 13px; }
   </style>
@@ -32,12 +46,12 @@
     <summary><strong>Parámetros de ejecución API</strong></summary>
     <div class="cfg-grid" style="margin-top:10px;">
       <input id="api_url" placeholder="API URL (opcional)" />
-      <input id="api_bearer" type="password" placeholder="API Bearer (opcional)" />
+      <input id="api_bearer" type="password" placeholder="API Bearer (opcional)" autocomplete="off" />
       <input id="db_host" placeholder="DB host (opcional)" />
       <input id="db_port" placeholder="DB port (opcional)" />
       <input id="db_name" placeholder="DB name (opcional)" />
       <input id="db_user" placeholder="DB user (opcional)" />
-      <input id="db_password" type="password" placeholder="DB password (opcional)" />
+      <input id="db_password" type="password" placeholder="DB password (opcional)" autocomplete="off" />
       <select id="db_engine">
         <option value="">DB engine (default)</option>
         <option value="mysql">mysql</option>
@@ -47,24 +61,28 @@
         <option value="sybase">sybase</option>
         <option value="sqlite">sqlite</option>
       </select>
-      <input id="llm_provider" list="llm_provider_options" placeholder="LLM provider (opcional)" />
+
+      <select id="llm_provider">
+        <option value="">LLM provider (default)</option>
+        <option value="openai">openai</option>
+        <option value="deepseek">deepseek</option>
+        <option value="mistral">mistral</option>
+        <option value="huggingface">huggingface</option>
+        <option value="anthropic">anthropic</option>
+        <option value="claude">claude</option>
+        <option value="gemini">gemini</option>
+        <option value="llama">llama</option>
+        <option value="copilot">copilot</option>
+      </select>
       <input id="llm_model" placeholder="LLM model (opcional)" />
       <input id="llm_base_url" placeholder="LLM base URL (opcional)" />
-      <input id="llm_api_key" type="password" placeholder="LLM API key (opcional)" />
+      <input id="llm_api_key" type="password" placeholder="LLM API key (opcional)" autocomplete="off" />
       <input id="ttl_minutes" placeholder="TTL minutos (opcional)" />
     </div>
+    <div id="providerHint" class="hint">Sugerencia proveedor/modelo: usa un proveedor conocido para autocompletar placeholders.</div>
+    <div id="dbHint" class="hint">Sugerencia DB: al elegir motor, se sugiere puerto por defecto.</div>
+    <div id="formAlert" class="alert"></div>
   </details>
-      <datalist id="llm_provider_options">
-        <option value="openai"></option>
-        <option value="deepseek"></option>
-        <option value="mistral"></option>
-        <option value="huggingface"></option>
-        <option value="anthropic"></option>
-        <option value="claude"></option>
-        <option value="gemini"></option>
-        <option value="llama"></option>
-        <option value="copilot"></option>
-      </datalist>
 
   <div id="chat" class="chat"></div>
   <form id="chatForm">
@@ -80,6 +98,28 @@ function newSessionId() {
 
 let sessionId = localStorage.getItem('demoSession') || newSessionId();
 localStorage.setItem('demoSession', sessionId);
+
+const providerSuggestions = {
+  openai: { model: 'gpt-4o-mini', baseUrl: 'https://api.openai.com/v1' },
+  deepseek: { model: 'deepseek-chat', baseUrl: 'https://api.deepseek.com/v1' },
+  mistral: { model: 'mistral-small-latest', baseUrl: 'https://api.mistral.ai/v1' },
+  huggingface: { model: 'meta-llama/Meta-Llama-3-8B-Instruct', baseUrl: 'https://api-inference.huggingface.co/models' },
+  anthropic: { model: 'claude-3-5-sonnet-latest', baseUrl: 'https://api.anthropic.com/v1' },
+  claude: { model: 'claude-3-5-sonnet-latest', baseUrl: 'https://api.anthropic.com/v1' },
+  gemini: { model: 'gemini-1.5-flash', baseUrl: 'https://generativelanguage.googleapis.com/v1beta' },
+  llama: { model: 'meta-llama/Meta-Llama-3.1-8B-Instruct', baseUrl: 'https://api.llama.com/v1' },
+  copilot: { model: 'gpt-4o-mini', baseUrl: 'https://api.githubcopilot.com' },
+};
+
+const enginePortSuggestions = {
+  mysql: 3306,
+  mariadb: 3306,
+  postgres: 5432,
+  sqlsrv: 1433,
+  sybase: 5000,
+};
+
+const allowedDbEngines = new Set(['mysql', 'mariadb', 'postgres', 'sqlsrv', 'sybase', 'sqlite']);
 
 const persistentKeys = [
   'api_url', 'db_host', 'db_port', 'db_name', 'db_user', 'db_engine',
@@ -107,6 +147,85 @@ Object.entries(defaults).forEach(([k, v]) => {
   const el = document.getElementById(k);
   if (el) el.value = v;
 });
+
+function showAlert(msg, type='info') {
+  const el = document.getElementById('formAlert');
+  if (!msg) {
+    el.style.display = 'none';
+    el.textContent = '';
+    el.classList.remove('warn');
+    return;
+  }
+  el.textContent = msg;
+  el.style.display = 'block';
+  el.classList.toggle('warn', type === 'warn');
+}
+
+function applyProviderHints() {
+  const provider = (document.getElementById('llm_provider')?.value || '').trim().toLowerCase();
+  const modelEl = document.getElementById('llm_model');
+  const baseUrlEl = document.getElementById('llm_base_url');
+  const hintEl = document.getElementById('providerHint');
+
+  const suggestion = providerSuggestions[provider];
+  if (!suggestion) {
+    modelEl.placeholder = 'LLM model (opcional)';
+    baseUrlEl.placeholder = 'LLM base URL (opcional)';
+    hintEl.textContent = 'Sugerencia proveedor/modelo: usa un proveedor conocido para autocompletar placeholders.';
+    return;
+  }
+
+  modelEl.placeholder = `Ej. ${suggestion.model}`;
+  baseUrlEl.placeholder = `Ej. ${suggestion.baseUrl}`;
+  hintEl.textContent = `Proveedor ${provider}: modelo sugerido "${suggestion.model}" y base URL "${suggestion.baseUrl}".`;
+}
+
+function applyDbHints() {
+  const engine = (document.getElementById('db_engine')?.value || '').trim().toLowerCase();
+  const portEl = document.getElementById('db_port');
+  const hintEl = document.getElementById('dbHint');
+
+  if (!engine) {
+    hintEl.textContent = 'Sugerencia DB: al elegir motor, se sugiere puerto por defecto.';
+    return;
+  }
+
+  if (!allowedDbEngines.has(engine)) {
+    hintEl.textContent = `Motor no soportado: ${engine}. Usa uno de ${Array.from(allowedDbEngines).join(', ')}.`;
+    return;
+  }
+
+  const suggested = enginePortSuggestions[engine];
+  if (suggested && !portEl.value.trim()) {
+    portEl.placeholder = `Ej. ${suggested}`;
+  }
+  hintEl.textContent = suggested
+    ? `Motor ${engine}: puerto sugerido ${suggested}.`
+    : `Motor ${engine}: no requiere puerto típico (revisa configuración específica).`;
+}
+
+function validateClientParams(params) {
+  const engine = (params.db_engine || '').toLowerCase();
+  if (engine && !allowedDbEngines.has(engine)) {
+    return `DB engine no soportado: ${engine}`;
+  }
+
+  if (params.db_port) {
+    const n = Number(params.db_port);
+    if (!Number.isInteger(n) || n <= 0 || n > 65535) {
+      return 'DB port debe ser un entero entre 1 y 65535';
+    }
+  }
+
+  if (params.ttl_minutes !== undefined) {
+    const ttl = Number(params.ttl_minutes);
+    if (!Number.isInteger(ttl) || ttl <= 0 || ttl > 1440) {
+      return 'TTL debe ser entero entre 1 y 1440 minutos';
+    }
+  }
+
+  return null;
+}
 
 function tableHTML(result) {
   if (!result || !Array.isArray(result.columnas) || !Array.isArray(result.filas) || result.columnas.length === 0) {
@@ -184,6 +303,7 @@ function maybeRotateSession(params) {
     sessionId = newSessionId();
     localStorage.setItem('demoSession', sessionId);
     localStorage.setItem('lastContextSignature', currentSignature);
+    showAlert('Se detectó cambio de contexto (DB/LLM/API): se inició una sesión nueva.', 'info');
     return true;
   }
   return false;
@@ -202,6 +322,9 @@ async function fetchHistory() {
   document.getElementById('status').textContent = `session=${sessionId} · ttl=${ttl} min`;
 }
 
+document.getElementById('llm_provider').addEventListener('change', applyProviderHints);
+document.getElementById('db_engine').addEventListener('change', applyDbHints);
+
 document.getElementById('chatForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const message = document.getElementById('message').value.trim();
@@ -209,11 +332,17 @@ document.getElementById('chatForm').addEventListener('submit', async (e) => {
   document.getElementById('message').value = '';
 
   const params = gatherParams();
+  const clientValidationError = validateClientParams(params);
+  if (clientValidationError) {
+    showAlert(clientValidationError, 'warn');
+    return;
+  }
+
   const rotated = maybeRotateSession(params);
 
   setBusy(true, rotated ? 'Contexto cambió: iniciando nueva sesión...' : 'Consultando API...');
   try {
-    await fetch('chat.php', {
+    const response = await fetch('chat.php', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
@@ -222,12 +351,21 @@ document.getElementById('chatForm').addEventListener('submit', async (e) => {
         params,
       })
     });
+
+    if (!response.ok) {
+      showAlert(`La API del demo respondió HTTP ${response.status}.`, 'warn');
+    } else {
+      showAlert('');
+    }
+
     await fetchHistory();
   } finally {
     setBusy(false);
   }
 });
 
+applyProviderHints();
+applyDbHints();
 fetchHistory();
 </script>
 </body>

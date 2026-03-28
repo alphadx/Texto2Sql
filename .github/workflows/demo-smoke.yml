@@ -5,6 +5,25 @@ on:
   workflow_dispatch:
 
 jobs:
+  demo-smoke-nodocker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Run no-docker demo smoke
+        run: make demo-smoke-nodocker
+
   demo-smoke:
     runs-on: ubuntu-latest
     env:

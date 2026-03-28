@@ -1,7 +1,7 @@
 PYTHON ?= python
 PIP ?= pip
 
-.PHONY: install-dev install-main-config test demo-install demo-check-env demo-build demo-up demo-down demo-logs demo-smoke llm-smoke-dry
+.PHONY: install-dev install-main-config test demo-install demo-check-env demo-build demo-up demo-down demo-logs demo-smoke demo-smoke-nodocker llm-smoke-dry
 
 install-dev:
 	$(PIP) install -r requirements.txt -r requirements-dev.txt
@@ -34,6 +34,9 @@ install-main-config:
 
 demo-smoke:
 	bash scripts/demo-smoke.sh
+
+demo-smoke-nodocker:
+	bash scripts/demo-smoke-nodocker.sh
 
 llm-smoke-dry:
 	PYTHONPATH=. $(PYTHON) scripts/llm_provider_smoke.py --provider openai --dry-run --api-key dummy

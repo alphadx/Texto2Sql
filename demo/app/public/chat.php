@@ -1,5 +1,28 @@
 <?php
-header('Content-Type: application/json; charset=utf-8');
+
+require_once __DIR__ . '/chat_adapter.php';
+
+function apply_demo_security_headers(): void {
+    header('Content-Type: application/json; charset=utf-8');
+    header('X-Content-Type-Options: nosniff');
+    header('X-Frame-Options: DENY');
+    header('Referrer-Policy: no-referrer');
+    header('Permissions-Policy: geolocation=(), microphone=(), camera=()');
+
+    $allowedOrigin = $_ENV['NL2SQL_DEMO_ALLOWED_ORIGIN'] ?? getenv('NL2SQL_DEMO_ALLOWED_ORIGIN') ?: '';
+    if ($allowedOrigin !== '') {
+        header('Access-Control-Allow-Origin: ' . $allowedOrigin);
+        header('Vary: Origin');
+        header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+        header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Correlation-Id');
+    }
+}
+
+apply_demo_security_headers();
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'OPTIONS') {
+    http_response_code(204);
+    exit;
+}
 
 $cacheDir = '/var/cache/texto2sql-demo';
 if (!is_dir($cacheDir)) {
@@ -15,155 +38,25 @@ if ($maxMessages <= 0) {
     $maxMessages = 40;
 }
 
-function cache_file(string $cacheDir, string $sessionId): string {
-    return $cacheDir . '/session_' . preg_replace('/[^a-zA-Z0-9_-]/', '_', $sessionId) . '.json';
-}
+function demo_log_event(array $event): void {
+    $logPath = '/var/log/texto2sql-demo/chat.log';
+    $event['api_url'] = isset($event['api_url']) && is_string($event['api_url'])
+        ? sanitize_url_for_logs($event['api_url'])
+        : null;
+    $event['error'] = isset($event['error']) && is_string($event['error'])
+        ? sanitize_sensitive_text($event['error'])
+        : null;
 
-function sanitize_ttl(int $ttlMinutes, int $defaultTtlMinutes): int {
-    if ($ttlMinutes <= 0) {
-        return $defaultTtlMinutes;
-    }
-    if ($ttlMinutes > 1440) {
-        return 1440;
-    }
-    return $ttlMinutes;
-}
-
-function build_default_state(int $ttlMinutes): array {
-    return [
-        'expires_at' => time() + ($ttlMinutes * 60),
-        'ttl_minutes' => $ttlMinutes,
-        'history' => [],
-        'context_signature' => null,
-    ];
-}
-
-function load_session(string $cacheDir, string $sessionId, int $defaultTtlMinutes): array {
-    $file = cache_file($cacheDir, $sessionId);
-    if (!file_exists($file)) {
-        return build_default_state($defaultTtlMinutes);
+    $line = json_encode($event, JSON_UNESCAPED_UNICODE);
+    if (!is_string($line)) {
+        return;
     }
 
-    $raw = file_get_contents($file);
-    $data = json_decode((string)$raw, true);
-    if (!is_array($data) || (int)($data['expires_at'] ?? 0) < time()) {
-        @unlink($file);
-        return build_default_state($defaultTtlMinutes);
+    $dir = dirname($logPath);
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0777, true);
     }
-
-    if (!isset($data['history']) || !is_array($data['history'])) {
-        $data['history'] = [];
-    }
-    $data['ttl_minutes'] = sanitize_ttl((int)($data['ttl_minutes'] ?? $defaultTtlMinutes), $defaultTtlMinutes);
-    $data['context_signature'] = $data['context_signature'] ?? null;
-    return $data;
-}
-
-function save_session(string $cacheDir, string $sessionId, array $payload): void {
-    file_put_contents(cache_file($cacheDir, $sessionId), json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-}
-
-function extract_columns(array $json): array {
-    $columns = $json['columnas'] ?? $json['columns'] ?? [];
-    if (empty($columns) && isset($json['filas'][0]) && is_array($json['filas'][0])) {
-        return array_map(static fn($idx) => 'col_' . $idx, array_keys($json['filas'][0]));
-    }
-    if (empty($columns) && isset($json['rows'][0]) && is_array($json['rows'][0])) {
-        return array_map(static fn($idx) => 'col_' . $idx, array_keys($json['rows'][0]));
-    }
-
-    return array_map(static function ($col) {
-        if (is_array($col)) {
-            return (string)($col['nombre'] ?? $col['name'] ?? json_encode($col));
-        }
-        return (string)$col;
-    }, $columns);
-}
-
-function extract_error(array $json): ?string {
-    if (!empty($json['error']) && is_string($json['error'])) {
-        return $json['error'];
-    }
-    if (!empty($json['errores']) && is_string($json['errores'])) {
-        return $json['errores'];
-    }
-    if (isset($json['detail']) && is_array($json['detail'])) {
-        if (!empty($json['detail']['error']) && is_string($json['detail']['error'])) {
-            return $json['detail']['error'];
-        }
-    }
-    return null;
-}
-
-function extract_sql(array $json): ?string {
-    $sql = $json['sql_generado'] ?? $json['sql'] ?? null;
-    return is_string($sql) && trim($sql) !== '' ? $sql : null;
-}
-
-function call_api(string $message, string $sessionId, array $params): array {
-    $apiUrl = $params['api_url'] ?? ($_ENV['NL2SQL_API_URL'] ?? getenv('NL2SQL_API_URL') ?: 'http://host.docker.internal:5000/nl2sql/query');
-    $apiToken = $params['api_bearer'] ?? ($_ENV['NL2SQL_API_KEY'] ?? getenv('NL2SQL_API_KEY') ?: '');
-
-    $apiProvider = $params['llm_provider'] ?? ($_ENV['NL2SQL_API_PROVIDER'] ?? getenv('NL2SQL_API_PROVIDER') ?: null);
-    $apiModel = $params['llm_model'] ?? ($_ENV['NL2SQL_MODEL'] ?? getenv('NL2SQL_MODEL') ?: null);
-    $llmApiKey = $params['llm_api_key'] ?? ($_ENV['LLM_API_KEY'] ?? getenv('LLM_API_KEY') ?: null);
-    $llmBaseUrl = $params['llm_base_url'] ?? ($_ENV['LLM_BASE_URL'] ?? getenv('LLM_BASE_URL') ?: null);
-
-    $payload = [
-        'host' => $params['db_host'] ?? ($_ENV['MYSQL_HOST'] ?? getenv('MYSQL_HOST') ?: '127.0.0.1'),
-        'usuario' => $params['db_user'] ?? ($_ENV['MYSQL_DEMO_USER'] ?? getenv('MYSQL_DEMO_USER') ?: 'demo'),
-        'contraseña' => $params['db_password'] ?? ($_ENV['MYSQL_DEMO_PASSWORD'] ?? getenv('MYSQL_DEMO_PASSWORD') ?: 'demo1234'),
-        'puerto' => (int)($params['db_port'] ?? ($_ENV['MYSQL_PORT'] ?? getenv('MYSQL_PORT') ?: 3306)),
-        'nombre_bd' => $params['db_name'] ?? ($_ENV['MYSQL_DEMO_DB'] ?? getenv('MYSQL_DEMO_DB') ?: 'sakila'),
-        'motor_bd' => $params['db_engine'] ?? 'mysql',
-        'consulta_nl' => $message,
-        'session_id' => $sessionId,
-        'llm_provider' => $apiProvider,
-        'llm_model' => $apiModel,
-        'llm_api_key' => $llmApiKey,
-        'llm_base_url' => $llmBaseUrl,
-    ];
-
-    $ch = curl_init($apiUrl);
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_POST => true,
-        CURLOPT_HTTPHEADER => array_filter([
-            'Content-Type: application/json',
-            $apiToken !== '' ? 'Authorization: Bearer ' . $apiToken : null,
-        ]),
-        CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE),
-        CURLOPT_TIMEOUT => 60,
-    ]);
-
-    $response = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $error = curl_error($ch);
-    curl_close($ch);
-
-    if ($error) {
-        return ['error' => 'Error al conectar API: ' . $error, 'columnas' => [], 'filas' => [], 'sql_generado' => null];
-    }
-
-    $json = json_decode((string)$response, true);
-    if (!is_array($json)) {
-        return ['error' => 'Respuesta API inválida (' . $httpCode . ')', 'columnas' => [], 'filas' => [], 'sql_generado' => null];
-    }
-
-    $rows = [];
-    if (is_array($json['filas'] ?? null)) {
-        $rows = $json['filas'];
-    } elseif (is_array($json['rows'] ?? null)) {
-        $rows = $json['rows'];
-    }
-
-    return [
-        'columnas' => extract_columns($json),
-        'filas' => $rows,
-        'error' => extract_error($json),
-        'sql_generado' => extract_sql($json),
-        'http_code' => $httpCode,
-    ];
+    @file_put_contents($logPath, $line . PHP_EOL, FILE_APPEND);
 }
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
@@ -185,6 +78,7 @@ if ($method === 'POST') {
     }
 
     $params = is_array($input['params'] ?? null) ? $input['params'] : [];
+    $params['correlation_id'] = $params['correlation_id'] ?? bin2hex(random_bytes(8));
     $requestedTtl = isset($params['ttl_minutes']) ? (int)$params['ttl_minutes'] : $defaultTtlMinutes;
     $ttlMinutes = sanitize_ttl($requestedTtl, $defaultTtlMinutes);
     $contextSignature = isset($params['context_signature']) ? (string)$params['context_signature'] : null;
@@ -216,8 +110,23 @@ if ($method === 'POST') {
             'filas' => $result['filas'] ?? [],
             'sql_generado' => $result['sql_generado'] ?? null,
             'error' => $result['error'] ?? null,
+            'http_code' => $result['http_code'] ?? null,
+            'error_type' => $result['error_type'] ?? 'none',
+            'request_ts' => $result['request_ts'] ?? null,
+            'latency_ms' => $result['latency_ms'] ?? null,
+            'correlation_id' => $result['correlation_id'] ?? $params['correlation_id'],
         ],
     ];
+
+    demo_log_event([
+        'ts' => time(),
+        'session_id' => $sessionId,
+        'correlation_id' => $result['correlation_id'] ?? $params['correlation_id'],
+        'api_url' => $result['api_url'] ?? ($params['api_url'] ?? null),
+        'http_code' => $result['http_code'] ?? null,
+        'latency_ms' => $result['latency_ms'] ?? null,
+        'error_type' => $result['error_type'] ?? 'none',
+    ]);
 
     if (count($state['history']) > $maxMessages) {
         $state['history'] = array_slice($state['history'], -1 * $maxMessages);

@@ -198,3 +198,12 @@ Se añadieron:
 - `scripts/generate_typed_snippets.py` para generar snippets por proveedor/lenguaje en `docs/providers/sdk/`.
 - `scripts/validate_typed_snippets.py` para validar estructura y contenido base.
 - job CI `typed-snippets-sync` para generar, validar y comprobar sincronía (`git diff --exit-code`).
+
+## 18) Gobernanza de cambios del Demo
+
+Para cambios que impacten el demo (contrato API, UX o smokes), usar:
+
+- Proceso de change management: `docs/demo-change-management.md`
+- Plantilla PR con sección obligatoria **Impacto en DEMO**: `.github/pull_request_template.md`
+
+Esto permite declarar releases como **Demo Compatible** con evidencia verificable.
