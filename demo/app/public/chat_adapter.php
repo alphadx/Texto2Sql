@@ -109,6 +109,11 @@ function extract_sql(array $json): ?string {
     return is_string($sql) && trim($sql) !== '' ? $sql : null;
 }
 
+function extract_formal_text(array $json): ?string {
+    $formal = $json['texto_formal'] ?? null;
+    return is_string($formal) && trim($formal) !== '' ? $formal : null;
+}
+
 function sanitize_sensitive_text(?string $value): ?string {
     if ($value === null) {
         return null;
@@ -193,6 +198,7 @@ function build_canonical_response(array $json, int $httpCode, int $latencyMs, in
         'filas' => $rows,
         'error' => $humanError,
         'sql_generado' => extract_sql($json),
+        'texto_formal' => extract_formal_text($json),
         'http_code' => $httpCode,
         'error_type' => $humanError !== null ? $errorType : 'none',
         'request_ts' => $requestTs,
@@ -253,6 +259,7 @@ function call_api(string $message, string $sessionId, array $params): array {
             'columnas' => [],
             'filas' => [],
             'sql_generado' => null,
+            'texto_formal' => null,
             'http_code' => $httpCode,
             'error_type' => 'connectivity',
             'request_ts' => $requestTs,
@@ -269,6 +276,7 @@ function call_api(string $message, string $sessionId, array $params): array {
             'columnas' => [],
             'filas' => [],
             'sql_generado' => null,
+            'texto_formal' => null,
             'http_code' => $httpCode,
             'error_type' => classify_error_type('', $httpCode),
             'request_ts' => $requestTs,

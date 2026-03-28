@@ -97,9 +97,13 @@ if ($method === 'POST') {
     $state['history'][] = ['role' => 'user', 'text' => $message, 'ts' => time()];
 
     $result = call_api($message, $sessionId, $params);
-    $assistantText = isset($result['error']) && $result['error']
-        ? $result['error']
-        : ('SQL: ' . ($result['sql_generado'] ?? 'No disponible en respuesta API'));
+    if (isset($result['error']) && $result['error']) {
+        $assistantText = $result['error'];
+    } else {
+        $formalText = $result['texto_formal'] ?? 'No disponible en respuesta API';
+        $sqlText = $result['sql_generado'] ?? 'No disponible en respuesta API';
+        $assistantText = "Texto formal: {$formalText}\nSQL: {$sqlText}";
+    }
 
     $state['history'][] = [
         'role' => 'assistant',
@@ -109,6 +113,7 @@ if ($method === 'POST') {
             'columnas' => $result['columnas'] ?? [],
             'filas' => $result['filas'] ?? [],
             'sql_generado' => $result['sql_generado'] ?? null,
+            'texto_formal' => $result['texto_formal'] ?? null,
             'error' => $result['error'] ?? null,
             'http_code' => $result['http_code'] ?? null,
             'error_type' => $result['error_type'] ?? 'none',
