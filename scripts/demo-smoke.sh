@@ -71,8 +71,8 @@ else
   echo 'NL2SQL_API_URL=http://host.docker.internal:5000/nl2sql/query' >> "$ENV_FILE"
 fi
 
-echo "[demo-smoke] starting mock /nl2sql/query API on 127.0.0.1:5000..."
-python scripts/mock_nl2sql_api.py &
+echo "[demo-smoke] starting mock /nl2sql/query API on 0.0.0.0:5000..."
+MOCK_API_HOST=0.0.0.0 MOCK_API_PORT=5000 python scripts/mock_nl2sql_api.py &
 MOCK_PID=$!
 
 sleep 1

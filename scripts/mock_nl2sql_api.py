@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import json
+import os
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 
@@ -54,7 +55,9 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    server = HTTPServer(("127.0.0.1", 5000), Handler)
+    host = os.getenv("MOCK_API_HOST", "127.0.0.1")
+    port = int(os.getenv("MOCK_API_PORT", "5000"))
+    server = HTTPServer((host, port), Handler)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
