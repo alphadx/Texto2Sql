@@ -41,16 +41,30 @@
       <select id="db_engine">
         <option value="">DB engine (default)</option>
         <option value="mysql">mysql</option>
+        <option value="mariadb">mariadb</option>
         <option value="postgres">postgres</option>
         <option value="sqlsrv">sqlsrv</option>
+        <option value="sybase">sybase</option>
+        <option value="sqlite">sqlite</option>
       </select>
-      <input id="llm_provider" placeholder="LLM provider (opcional)" />
+      <input id="llm_provider" list="llm_provider_options" placeholder="LLM provider (opcional)" />
       <input id="llm_model" placeholder="LLM model (opcional)" />
       <input id="llm_base_url" placeholder="LLM base URL (opcional)" />
       <input id="llm_api_key" type="password" placeholder="LLM API key (opcional)" />
       <input id="ttl_minutes" placeholder="TTL minutos (opcional)" />
     </div>
   </details>
+      <datalist id="llm_provider_options">
+        <option value="openai"></option>
+        <option value="deepseek"></option>
+        <option value="mistral"></option>
+        <option value="huggingface"></option>
+        <option value="anthropic"></option>
+        <option value="claude"></option>
+        <option value="gemini"></option>
+        <option value="llama"></option>
+        <option value="copilot"></option>
+      </datalist>
 
   <div id="chat" class="chat"></div>
   <form id="chatForm">

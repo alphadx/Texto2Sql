@@ -64,17 +64,40 @@ function save_session(string $cacheDir, string $sessionId, array $payload): void
 }
 
 function extract_columns(array $json): array {
-    $columns = $json['columnas'] ?? [];
+    $columns = $json['columnas'] ?? $json['columns'] ?? [];
     if (empty($columns) && isset($json['filas'][0]) && is_array($json['filas'][0])) {
         return array_map(static fn($idx) => 'col_' . $idx, array_keys($json['filas'][0]));
+    }
+    if (empty($columns) && isset($json['rows'][0]) && is_array($json['rows'][0])) {
+        return array_map(static fn($idx) => 'col_' . $idx, array_keys($json['rows'][0]));
     }
 
     return array_map(static function ($col) {
         if (is_array($col)) {
-            return (string)($col['nombre'] ?? json_encode($col));
+            return (string)($col['nombre'] ?? $col['name'] ?? json_encode($col));
         }
         return (string)$col;
     }, $columns);
+}
+
+function extract_error(array $json): ?string {
+    if (!empty($json['error']) && is_string($json['error'])) {
+        return $json['error'];
+    }
+    if (!empty($json['errores']) && is_string($json['errores'])) {
+        return $json['errores'];
+    }
+    if (isset($json['detail']) && is_array($json['detail'])) {
+        if (!empty($json['detail']['error']) && is_string($json['detail']['error'])) {
+            return $json['detail']['error'];
+        }
+    }
+    return null;
+}
+
+function extract_sql(array $json): ?string {
+    $sql = $json['sql_generado'] ?? $json['sql'] ?? null;
+    return is_string($sql) && trim($sql) !== '' ? $sql : null;
 }
 
 function call_api(string $message, string $sessionId, array $params): array {
@@ -119,19 +142,26 @@ function call_api(string $message, string $sessionId, array $params): array {
     curl_close($ch);
 
     if ($error) {
-        return ['error' => 'Error al conectar API: ' . $error, 'columnas' => [], 'filas' => []];
+        return ['error' => 'Error al conectar API: ' . $error, 'columnas' => [], 'filas' => [], 'sql_generado' => null];
     }
 
     $json = json_decode((string)$response, true);
     if (!is_array($json)) {
-        return ['error' => 'Respuesta API inválida (' . $httpCode . ')', 'columnas' => [], 'filas' => []];
+        return ['error' => 'Respuesta API inválida (' . $httpCode . ')', 'columnas' => [], 'filas' => [], 'sql_generado' => null];
+    }
+
+    $rows = [];
+    if (is_array($json['filas'] ?? null)) {
+        $rows = $json['filas'];
+    } elseif (is_array($json['rows'] ?? null)) {
+        $rows = $json['rows'];
     }
 
     return [
         'columnas' => extract_columns($json),
-        'filas' => is_array($json['filas'] ?? null) ? $json['filas'] : [],
-        'error' => $json['errores'] ?? null,
-        'sql_generado' => $json['sql_generado'] ?? null,
+        'filas' => $rows,
+        'error' => extract_error($json),
+        'sql_generado' => extract_sql($json),
         'http_code' => $httpCode,
     ];
 }
@@ -175,7 +205,7 @@ if ($method === 'POST') {
     $result = call_api($message, $sessionId, $params);
     $assistantText = isset($result['error']) && $result['error']
         ? $result['error']
-        : ('SQL: ' . ($result['sql_generado'] ?? 'N/A'));
+        : ('SQL: ' . ($result['sql_generado'] ?? 'No disponible en respuesta API'));
 
     $state['history'][] = [
         'role' => 'assistant',
