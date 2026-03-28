@@ -10,54 +10,13 @@ the same session continue the context established by previous turns.
 """
 
 import logging
-import os
 import re
-from dataclasses import dataclass
 from typing import Any, Dict, List
 
-from openai import OpenAI
-
+from app.llm.providers import get_gateway, resolve_runtime_config
 from app.llm.session_manager import SessionManager
 
 logger = logging.getLogger(__name__)
-
-# ---------------------------------------------------------------------------
-# OpenAI client (lazy singleton)
-# ---------------------------------------------------------------------------
-
-_clients: dict[tuple[str, str, str | None], OpenAI] = {}
-
-
-@dataclass(frozen=True)
-class LLMRuntimeConfig:
-    provider: str
-    api_key: str
-    model: str
-    base_url: str | None = None
-
-
-def resolve_llm_config(llm_options: dict[str, Any] | None = None) -> LLMRuntimeConfig:
-    options = llm_options or {}
-    provider = str(options.get("provider") or os.getenv("LLM_PROVIDER") or "openai").strip()
-    api_key = str(options.get("api_key") or os.getenv("OPENAI_API_KEY") or "").strip()
-    model = str(options.get("model") or os.getenv("OPENAI_MODEL") or "gpt-4").strip()
-    base_url_raw = options.get("base_url") or os.getenv("OPENAI_BASE_URL")
-    base_url = str(base_url_raw).strip() if base_url_raw else None
-
-    if not api_key:
-        raise RuntimeError("Missing LLM API key: set OPENAI_API_KEY or send llm_api_key in request")
-
-    return LLMRuntimeConfig(provider=provider, api_key=api_key, model=model, base_url=base_url)
-
-
-def _get_client(config: LLMRuntimeConfig) -> OpenAI:
-    key = (config.provider, config.api_key, config.base_url)
-    if key not in _clients:
-        kwargs: dict[str, Any] = {"api_key": config.api_key}
-        if config.base_url:
-            kwargs["base_url"] = config.base_url
-        _clients[key] = OpenAI(**kwargs)
-    return _clients[key]
 
 
 # ---------------------------------------------------------------------------
@@ -106,12 +65,10 @@ def _clean_sql(text: str) -> str:
 
 
 def _chat(messages: List[Dict[str, Any]], llm_options: dict[str, Any] | None = None) -> str:
-    config = resolve_llm_config(llm_options)
-    response = _get_client(config).chat.completions.create(
-        model=config.model,
-        messages=messages,
-    )
-    return response.choices[0].message.content or ""
+    config = resolve_runtime_config(llm_options)
+    gateway = get_gateway(config.provider)
+    result = gateway.complete(config, messages)
+    return result.text
 
 
 # ---------------------------------------------------------------------------

@@ -21,6 +21,11 @@ from app.db.connector import (
 )
 from app.db.sql_guard import SQLValidationError, validate_sql_query
 from app.llm.converter import generate_sql, refine_query
+from app.llm.providers import LLMProviderError
+from app.llm.settings import (
+    load_llm_startup_settings_from_env,
+    validate_llm_startup_settings,
+)
 from app.llm.session_manager import SessionManager, build_session_manager_from_env
 from app.observability import MetricsRegistry
 from app.security import (
@@ -209,6 +214,23 @@ def _build_nl2sql_router(session_manager: SessionManager) -> APIRouter:
                     session_manager=session_manager,
                     llm_options=llm_options,
                 )
+            except LLMProviderError as exc:
+                logger.error("LLM provider error: %s", exc)
+                provider = exc.provider or "unknown"
+                if "circuit breaker is open" in str(exc).lower():
+                    error_type = f"llm_circuit_open_{provider}"
+                else:
+                    error_type = f"llm_provider_error_{provider}"
+                error_message = str(exc)
+                status_code = exc.status_code or 503
+                raise HTTPException(
+                    status_code=status_code,
+                    detail={
+                        "error": f"LLM provider error ({provider}): {exc.message}",
+                        "provider": provider,
+                        "retryable": exc.retryable,
+                    },
+                ) from exc
             except Exception as exc:  # noqa: BLE001
                 logger.error("LLM error: %s", exc)
                 error_type = "llm_processing_error"
@@ -307,6 +329,7 @@ def create_app(session_manager: SessionManager | None = None) -> FastAPI:
     sm = session_manager or _default_session_manager
     auth_settings = load_auth_settings_from_env()
     validate_security_settings(auth_settings)
+    validate_llm_startup_settings(load_llm_startup_settings_from_env())
 
     app = FastAPI(title="Texto2Sql API")
     app.state.auth_settings = auth_settings

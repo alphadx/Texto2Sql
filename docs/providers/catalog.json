@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "languages": ["php_8_3", "nodejs_lts", "python_stable", "cpp_libcurl", "csharp_dotnet", "java_jdk"],
+  "providers": [
+    {
+      "id": "openai",
+      "company": "OpenAI",
+      "mini_model": "gpt-4.1-mini",
+      "env_api_key": "OPENAI_API_KEY",
+      "base_url": "https://api.openai.com/v1/chat/completions",
+      "doc": "docs/providers/openai.md"
+    },
+    {
+      "id": "deepseek",
+      "company": "DeepSeek",
+      "mini_model": "deepseek-chat",
+      "env_api_key": "DEEPSEEK_API_KEY",
+      "base_url": "https://api.deepseek.com/v1/chat/completions",
+      "doc": "docs/providers/deepseek.md"
+    },
+    {
+      "id": "huggingface",
+      "company": "Hugging Face",
+      "mini_model": "Qwen/Qwen2.5-3B-Instruct",
+      "env_api_key": "HUGGINGFACE_API_KEY",
+      "base_url": "https://router.huggingface.co/v1/chat/completions",
+      "doc": "docs/providers/huggingface.md"
+    },
+    {
+      "id": "gemini",
+      "company": "Google",
+      "mini_model": "gemini-2.0-flash-lite",
+      "env_api_key": "GEMINI_API_KEY",
+      "base_url": "https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent?key={API_KEY}",
+      "doc": "docs/providers/gemini.md"
+    },
+    {
+      "id": "mistral",
+      "company": "Mistral",
+      "mini_model": "mistral-small-latest",
+      "env_api_key": "MISTRAL_API_KEY",
+      "base_url": "https://api.mistral.ai/v1/chat/completions",
+      "doc": "docs/providers/mistral.md"
+    },
+    {
+      "id": "claude",
+      "company": "Anthropic",
+      "mini_model": "claude-3-5-haiku-latest",
+      "env_api_key": "ANTHROPIC_API_KEY",
+      "base_url": "https://api.anthropic.com/v1/messages",
+      "doc": "docs/providers/claude.md"
+    },
+    {
+      "id": "llama",
+      "company": "Meta",
+      "mini_model": "meta-llama/Llama-3.1-8B-Instruct",
+      "env_api_key": "LLAMA_API_KEY",
+      "base_url": "https://router.huggingface.co/v1/chat/completions",
+      "doc": "docs/providers/llama.md"
+    },
+    {
+      "id": "copilot",
+      "company": "GitHub",
+      "mini_model": "gpt-4.1-mini",
+      "env_api_key": "COPILOT_API_KEY",
+      "base_url": "https://models.inference.ai.azure.com/chat/completions",
+      "doc": "docs/providers/copilot.md"
+    }
+  ]
+}

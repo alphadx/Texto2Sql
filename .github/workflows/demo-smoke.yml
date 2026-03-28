@@ -15,3 +15,79 @@ jobs:
 
       - name: Run demo smoke test (build + sakila validation)
         run: make demo-smoke
+
+  llm-provider-smoke-dry:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        provider: [openai, deepseek, mistral, huggingface, anthropic, gemini, llama, copilot]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: LLM provider smoke (dry-run)
+        run: |
+          PYTHONPATH=. python scripts/llm_provider_smoke.py \
+            --provider "${{ matrix.provider }}" \
+            --dry-run \
+            --api-key "dummy-key"
+
+  provider-catalog-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Validate provider catalog
+        run: python scripts/validate_provider_catalog.py
+
+  provider-artifacts-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Generate provider artifacts
+        run: python scripts/generate_provider_artifacts.py
+
+      - name: Check generated files are in sync
+        run: git diff --exit-code
+
+  provider-markdown-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Generate provider markdown docs
+        run: python scripts/generate_provider_markdowns.py
+
+      - name: Validate provider markdown consistency
+        run: python scripts/validate_provider_docs.py
+
+      - name: Check markdown files are in sync
+        run: git diff --exit-code
+
+  typed-snippets-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Generate typed snippets
+        run: python scripts/generate_typed_snippets.py
+
+      - name: Validate typed snippets
+        run: python scripts/validate_typed_snippets.py
+
+      - name: Check typed snippets are in sync
+        run: git diff --exit-code
