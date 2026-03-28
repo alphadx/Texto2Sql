@@ -94,6 +94,7 @@ class NL2SQLQueryResponse(BaseModel):
     rows: list[list[Any]]
     session_id: str
     sql: str | None = None
+    texto_formal: str | None = None
 
 
 class DeleteSessionResponse(BaseModel):
@@ -144,6 +145,7 @@ def _build_nl2sql_router(session_manager: SessionManager) -> APIRouter:
         error_type = None
         error_message = None
         sql = None
+        refined = None
 
         db_model = payload.motor_bd.lower()
         if db_model not in VALID_DB_MODELS:
@@ -282,6 +284,7 @@ def _build_nl2sql_router(session_manager: SessionManager) -> APIRouter:
 
             result["session_id"] = session_id
             result["sql"] = sql
+            result["texto_formal"] = refined
             return result
         finally:
             total_ms = (time.perf_counter() - request_start) * 1000

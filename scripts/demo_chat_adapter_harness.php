@@ -18,16 +18,19 @@ $legacy = build_canonical_response([
 assert_true($legacy['columnas'][0] === 'nombre', 'parsea columnas legacy');
 assert_true($legacy['filas'][0][0] === 'Ana', 'parsea filas legacy');
 assert_true($legacy['sql_generado'] === 'SELECT nombre FROM clientes', 'parsea sql_generado legacy');
+assert_true($legacy['texto_formal'] === null, 'fallback texto_formal null en legacy');
 assert_true($legacy['error'] === null, 'sin error en respuesta 200 válida');
 
 $current = build_canonical_response([
     'columns' => ['name'],
     'rows' => [['Ana']],
     'sql' => 'SELECT name FROM customers',
+    'texto_formal' => 'Listar clientes por nombre',
 ], 200, 14, 1700000010);
 assert_true($current['columnas'][0] === 'name', 'parsea columns actual');
 assert_true($current['filas'][0][0] === 'Ana', 'parsea rows actual');
 assert_true($current['sql_generado'] === 'SELECT name FROM customers', 'parsea sql actual');
+assert_true($current['texto_formal'] === 'Listar clientes por nombre', 'parsea texto_formal actual');
 
 $detailError = build_canonical_response([
     'detail' => ['error' => 'token inválido'],

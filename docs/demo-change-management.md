@@ -12,9 +12,9 @@ Definir un proceso liviano para declarar si un release es **Demo Compatible**.
 ## Checklist de release (cambios API/providers)
 
 1. Contrato demo↔API revisado:
-   - `columns/rows/sql` (actual)
+   - `columns/rows/sql/texto_formal` (actual)
    - `columnas/filas/sql_generado` (legacy)
-   - fallback sin SQL
+   - fallback sin texto formal y/o sin SQL
 2. Errores 2xx/4xx/5xx muestran estado usable en chat.
 3. `correlation_id` y logging estructurado siguen presentes.
 4. `make demo-smoke-nodocker` pasa en CI.

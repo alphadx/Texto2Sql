@@ -174,6 +174,7 @@ class TestQuerySuccess(unittest.TestCase):
         self.assertIn("columns", data)
         self.assertIn("rows", data)
         self.assertIn("session_id", data)
+        self.assertEqual(data["texto_formal"], "Retrieve all users")
 
     @patch("app.api.execute_query")
     @patch("app.api.generate_sql")
@@ -273,6 +274,7 @@ class TestQueryRegressionWithRedis(unittest.TestCase):
         self.assertEqual(body["session_id"], sid)
         self.assertEqual(body["columns"][0]["name"], "id")
         self.assertEqual(body["rows"], [[1], [2]])
+        self.assertEqual(body["texto_formal"], "Retrieve users")
         mock_refine.assert_called_once()
         mock_sql.assert_called_once()
         mock_exec.assert_called_once()

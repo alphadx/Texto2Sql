@@ -49,6 +49,7 @@ El adaptador de `demo/app/public/chat.php` consume el endpoint principal `/nl2sq
 - `columnas: string[]`
 - `filas: array[]`
 - `sql_generado: string|null`
+- `texto_formal: string|null`
 - `error: string|null`
 - `http_code: int|null`
 - `error_type: one of [none, connectivity, auth, validation, execution, api_error]`
@@ -62,15 +63,17 @@ El adaptador de `demo/app/public/chat.php` consume el endpoint principal `/nl2sq
 | Columnas | `columns` | `columnas` | `columnas` |
 | Filas | `rows` | `filas` | `filas` |
 | SQL generado | `sql` | `sql_generado` | `sql_generado` |
+| Texto formal (refiner) | `texto_formal` | _(no disponible)_ | `texto_formal` |
 | Error simple | `error` | `errores` (string) | `error` |
 | Error FastAPI | `detail.error` | `detail` (string) | `error` |
 | Error no JSON | _body no parseable_ | _body no parseable_ | `error` + `error_type` |
 
 ### Reglas de fallback
 
-1. Si no hay `sql`/`sql_generado`, la UI muestra: `SQL: No disponible en respuesta API`.
-2. Si la API retorna body no JSON, se informa `La API devolvió un body no JSON (HTTP NNN)`.
-3. En errores HTTP se categoriza por tipo para feedback más útil:
+1. Si no hay `texto_formal`, la UI muestra: `Texto formal: No disponible en respuesta API`.
+2. Si no hay `sql`/`sql_generado`, la UI muestra: `SQL: No disponible en respuesta API`.
+3. Si la API retorna body no JSON, se informa `La API devolvió un body no JSON (HTTP NNN)`.
+4. En errores HTTP se categoriza por tipo para feedback más útil:
    - `401/403`: `auth`
    - `400/404/422`: `validation`
    - `5xx`: `execution`
@@ -84,7 +87,8 @@ El adaptador de `demo/app/public/chat.php` consume el endpoint principal `/nl2sq
 {
   "columns": ["name", "total"],
   "rows": [["Action", 1320]],
-  "sql": "SELECT ..."
+  "sql": "SELECT ...",
+  "texto_formal": "Mostrar el total por categoría."
 }
 ```
 
@@ -113,6 +117,7 @@ Error FastAPI:
 - [ ] ¿`columns/rows` o `columnas/filas` siguen siendo parseables por el demo?
 - [ ] ¿Errores en `error`, `errores`, `detail.error` o `detail` string muestran mensaje útil?
 - [ ] ¿El demo sigue mostrando estado claro en 2xx/4xx/5xx sin romper sesión?
+- [ ] ¿`texto_formal` faltante cae en fallback legible?
 - [ ] ¿`sql`/`sql_generado` faltante cae en fallback legible?
 - [ ] ¿`http_code`, `request_ts` y `latency_ms` quedan guardados en historial para trazabilidad?
 
@@ -141,7 +146,7 @@ Este smoke ahora valida:
 
 - Salud de MySQL y carga de `sakila`.
 - `GET /chat.php` devuelve `session_id` e historial válido.
-- `POST /chat.php` contra API mock con contrato **actual** (`columns/rows/sql`).
+- `POST /chat.php` contra API mock con contrato **actual** (`columns/rows/sql/texto_formal`).
 - `POST /chat.php` contra API mock con contrato **legacy** (`columnas/filas/sql_generado`).
 
 ### Smoke sin Docker (checks mínimos de adaptador)
@@ -174,7 +179,7 @@ Guía rápida para diagnóstico operativo (top errores):
 4. **Body no JSON en respuesta API**
    - Confirma que el endpoint devuelve JSON válido y no HTML/texto de error intermedio.
 5. **Sin tabla en respuesta**
-   - La API pudo devolver solo error o solo SQL; revisa `history[].result.error` y `sql_generado`.
+   - La API pudo devolver solo error o solo SQL/texto formal; revisa `history[].result.error`, `sql_generado` y `texto_formal`.
 6. **Rotación inesperada de sesión**
    - Cambiar campos de `context_signature` crea sesión nueva (comportamiento esperado).
 7. **`demo-smoke-nodocker` falla al iniciar PHP**
