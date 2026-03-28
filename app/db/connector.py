@@ -77,13 +77,22 @@ def build_connection_url(
     password = quote_plus(db_password)
     dialect = _DIALECTS[model]
 
+    # Ensure port is an int or fall back to default for the model.
+    try:
+        port_value = int(db_port)
+    except (TypeError, ValueError):
+        if db_port in (None, ""):
+            port_value = default_port(model)
+        else:
+            raise ValueError(f"Invalid port value: {db_port!r}")
+
     if model == "sqlsrv":
         return (
-            f"mssql+pyodbc://{user}:{password}@{db_host}:{db_port}/{db_name}"
+            f"mssql+pyodbc://{user}:{password}@{db_host}:{port_value}/{db_name}"
             "?driver=ODBC+Driver+17+for+SQL+Server"
         )
 
-    return f"{dialect}://{user}:{password}@{db_host}:{db_port}/{db_name}"
+    return f"{dialect}://{user}:{password}@{db_host}:{port_value}/{db_name}"
 
 
 # ---------------------------------------------------------------------------

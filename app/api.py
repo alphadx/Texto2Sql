@@ -93,6 +93,7 @@ class NL2SQLQueryResponse(BaseModel):
     columns: list[QueryColumn]
     rows: list[list[Any]]
     session_id: str
+    sql: str | None = None
 
 
 class DeleteSessionResponse(BaseModel):
@@ -170,7 +171,15 @@ def _build_nl2sql_router(session_manager: SessionManager) -> APIRouter:
                 raise HTTPException(status_code=400, detail={"error": error_message})
 
             try:
-                port = payload.puerto or default_port(db_model)
+                raw_port = payload.puerto
+                if raw_port in (None, ""):
+                    port = default_port(db_model)
+                else:
+                    try:
+                        port = int(raw_port)
+                    except (TypeError, ValueError) as exc:
+                        raise HTTPException(status_code=400, detail={"error": f"Invalid puerto: {raw_port!r}"}) from exc
+
                 conn_url = build_connection_url(
                     db_model=db_model,
                     db_host=payload.host or "",
@@ -272,6 +281,7 @@ def _build_nl2sql_router(session_manager: SessionManager) -> APIRouter:
                 sql_ms = (time.perf_counter() - stage_start) * 1000
 
             result["session_id"] = session_id
+            result["sql"] = sql
             return result
         finally:
             total_ms = (time.perf_counter() - request_start) * 1000
