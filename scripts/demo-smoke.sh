@@ -31,13 +31,14 @@ docker compose -f "$COMPOSE_FILE" up -d --build
 
 echo "[demo-smoke] waiting for mysql to become ready..."
 for _ in {1..240}; do
-  if [[ "$(docker compose -f "$COMPOSE_FILE" ps -q texto2sql-demo | wc -l)" -eq 0 ]]; then
-    echo "[demo-smoke] container not found" >&2
-    docker compose -f "$COMPOSE_FILE" logs || true
-    exit 1
+  CID=$(docker compose -f "$COMPOSE_FILE" ps -q texto2sql-demo)
+  if [[ -z "$CID" ]]; then
+    sleep 2
+    continue
   fi
 
-  if ! docker compose -f "$COMPOSE_FILE" ps texto2sql-demo | grep -q "Up"; then
+  STATUS=$(docker inspect -f "{{.State.Status}}" "$CID" 2>/dev/null || true)
+  if [[ "$STATUS" == "exited" || "$STATUS" == "dead" ]]; then
     echo "[demo-smoke] container exited before mysql became ready" >&2
     docker compose -f "$COMPOSE_FILE" logs texto2sql-demo || true
     exit 1
