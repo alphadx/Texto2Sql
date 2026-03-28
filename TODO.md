@@ -53,3 +53,9 @@ Este documento resume el análisis de los ajustes que faltan tras el PR **"Add c
 - [x] Sin regresiones en flujo actual de `nl2sql/query`.
 - [x] Confirmación explícita de que el borrado por `/session/{id}` funciona igual en memoria y Redis.
 - [x] Documentación actualizada y consistente con comportamiento real.
+
+## TODO demo Docker NL2SQL
+
+- [x] Mover definición oficial de proveedor/API key/modelo al instalador principal (`scripts/install-main.sh`).
+- [x] Permitir override por request en `POST /nl2sql/query` para consumidores con otro proveedor (`llm_provider`, `llm_model`, `llm_api_key`, `llm_base_url`).
+- [x] Validar en CI que la imagen del demo levanta correctamente y que `sakila` quedó cargada (`SELECT COUNT(*) FROM film;`).

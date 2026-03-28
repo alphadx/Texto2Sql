@@ -12,6 +12,7 @@ the same session continue the context established by previous turns.
 import logging
 import os
 import re
+from dataclasses import dataclass
 from typing import Any, Dict, List
 
 from openai import OpenAI
@@ -24,14 +25,39 @@ logger = logging.getLogger(__name__)
 # OpenAI client (lazy singleton)
 # ---------------------------------------------------------------------------
 
-_client: OpenAI | None = None
+_clients: dict[tuple[str, str, str | None], OpenAI] = {}
 
 
-def _get_client() -> OpenAI:
-    global _client
-    if _client is None:
-        _client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
-    return _client
+@dataclass(frozen=True)
+class LLMRuntimeConfig:
+    provider: str
+    api_key: str
+    model: str
+    base_url: str | None = None
+
+
+def resolve_llm_config(llm_options: dict[str, Any] | None = None) -> LLMRuntimeConfig:
+    options = llm_options or {}
+    provider = str(options.get("provider") or os.getenv("LLM_PROVIDER") or "openai").strip()
+    api_key = str(options.get("api_key") or os.getenv("OPENAI_API_KEY") or "").strip()
+    model = str(options.get("model") or os.getenv("OPENAI_MODEL") or "gpt-4").strip()
+    base_url_raw = options.get("base_url") or os.getenv("OPENAI_BASE_URL")
+    base_url = str(base_url_raw).strip() if base_url_raw else None
+
+    if not api_key:
+        raise RuntimeError("Missing LLM API key: set OPENAI_API_KEY or send llm_api_key in request")
+
+    return LLMRuntimeConfig(provider=provider, api_key=api_key, model=model, base_url=base_url)
+
+
+def _get_client(config: LLMRuntimeConfig) -> OpenAI:
+    key = (config.provider, config.api_key, config.base_url)
+    if key not in _clients:
+        kwargs: dict[str, Any] = {"api_key": config.api_key}
+        if config.base_url:
+            kwargs["base_url"] = config.base_url
+        _clients[key] = OpenAI(**kwargs)
+    return _clients[key]
 
 
 # ---------------------------------------------------------------------------
@@ -79,13 +105,13 @@ def _clean_sql(text: str) -> str:
     return text.strip()
 
 
-def _chat(messages: List[Dict[str, Any]]) -> str:
-    model = os.environ.get("OPENAI_MODEL", "gpt-4")
-    response = _get_client().chat.completions.create(
-        model=model,
+def _chat(messages: List[Dict[str, Any]], llm_options: dict[str, Any] | None = None) -> str:
+    config = resolve_llm_config(llm_options)
+    response = _get_client(config).chat.completions.create(
+        model=config.model,
         messages=messages,
     )
-    return response.choices[0].message.content
+    return response.choices[0].message.content or ""
 
 
 # ---------------------------------------------------------------------------
@@ -98,6 +124,7 @@ def refine_query(
     natural_query: str,
     schema: str,
     session_manager: SessionManager,
+    llm_options: dict[str, Any] | None = None,
 ) -> str:
     """Formalise *natural_query* into a structured description (no SQL)."""
     history = session_manager.get_history(session_id, "refiner")
@@ -112,7 +139,7 @@ def refine_query(
 
     history.append({"role": "user", "content": natural_query})
 
-    refined = _chat(history)
+    refined = _chat(history, llm_options=llm_options)
 
     history.append({"role": "assistant", "content": refined})
     session_manager.set_history(session_id, "refiner", history)
@@ -132,6 +159,7 @@ def generate_sql(
     schema: str,
     db_model: str,
     session_manager: SessionManager,
+    llm_options: dict[str, Any] | None = None,
 ) -> str:
     """Convert *refined_query* into an executable SQL statement."""
     history = session_manager.get_history(session_id, "sql_agent")
@@ -148,7 +176,7 @@ def generate_sql(
 
     history.append({"role": "user", "content": refined_query})
 
-    sql = _clean_sql(_chat(history))
+    sql = _clean_sql(_chat(history, llm_options=llm_options))
 
     history.append({"role": "assistant", "content": sql})
     session_manager.set_history(session_id, "sql_agent", history)

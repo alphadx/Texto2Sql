@@ -325,3 +325,46 @@ make test
 ```
 
 El target `test` instala `requirements.txt` + `requirements-dev.txt` y luego ejecuta `pytest tests/test_app.py`.
+
+## Demo Docker (contenedor único)
+
+Se agregó un demo en `demo/` con comando especial de Make:
+
+```bash
+make install-main-config  # define proveedor/key/modelo oficiales en .env del programa principal
+make demo-install         # configura endpoint/credenciales runtime del demo
+make demo-up              # build + up del contenedor demo (valida demo/.env)
+make demo-smoke           # smoke test: build + valida que sakila.film tenga filas
+```
+
+Detalles en `demo/README.md`.
+
+Parámetros dinámicos en la vista: URL/API bearer, host/puerto/db/usuario/password/engine, TTL y overrides LLM por request; al cambiar contexto DB/LLM/API se rota sesión automáticamente.
+
+## Configuración principal del proveedor LLM
+
+Las definiciones oficiales de **compañía/proveedor**, **API key** y **modelo** ahora pertenecen a la instalación principal:
+
+```bash
+make install-main-config
+```
+
+Este asistente escribe `.env` con:
+
+- `LLM_PROVIDER`
+- `OPENAI_API_KEY`
+- `OPENAI_MODEL`
+- `OPENAI_BASE_URL`
+
+Además, `POST /nl2sql/query` permite sobreescribir por request (útil para consumidores que usan otra compañía):
+
+- `llm_provider`
+- `llm_model`
+- `llm_api_key`
+- `llm_base_url`
+
+
+Se agregó workflow de CI `demo-smoke` para validar build del demo y carga de `sakila`.
+
+
+Tip demo CI: `INSTALL_YII_ON_BOOT=false` por defecto para evitar timeouts en arranque del smoke test.
