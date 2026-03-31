@@ -60,7 +60,7 @@ _DEFAULT_MODELS = {
     "openai": "gpt-4",
     "deepseek": "deepseek-chat",
     "mistral": "mistral-small-latest",
-    "huggingface": "openai/gpt-oss-20b",
+    "huggingface": "Qwen/Qwen2.5-3B-Instruct",
     "anthropic": "claude-3-5-sonnet-latest",
     "gemini": "gemini-2.0-flash",
     "llama": "meta-llama/llama-3.1-8b-instruct",

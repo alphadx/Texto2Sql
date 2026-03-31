@@ -99,6 +99,19 @@ Payload con dedicated endpoint:
 
 Hito 1 se cierra cuando precedencia, contrato runtime, errores esperados y plan de pruebas queden documentados y listos para implementación del Hito 2.
 
+## Hito 2 — Avance de implementación (actual)
+
+Estado actual ya cubierto en código:
+
+- Default de modelo por proveedor para Hugging Face (`Qwen/Qwen2.5-3B-Instruct`).
+- Resolución por precedencia request → `HUGGINGFACE_*` → `LLM_*`.
+- Validación de `base_url` y manejo de errores de configuración en API/smoke.
+
+Pendiente para cierre completo de Hito 2:
+
+1. Pruebas de integración dedicadas para escenario `serverless` vs `dedicated endpoint`.
+2. Evidencia de wiring end-to-end en `POST /nl2sql/query` con mocks de gateway Hugging Face.
+
 ## Modelo mini/equivalente recomendado
 - `Qwen/Qwen2.5-3B-Instruct`
 
