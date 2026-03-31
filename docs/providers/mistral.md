@@ -1,5 +1,33 @@
 # Mistral
 
+## Estado de implementación (Hito 0: alineación)
+
+### Decisión inicial de integración
+- Se adopta integración **OpenAI-compatible** para Mistral (`/v1/chat/completions`) en la fase inicial.
+- Se habilita override de `base_url` por request/env para soportar proxys o gateways dedicados por entorno.
+
+### Alcance del primer release (no-GA)
+- Flujo NL→SQL con `llm_provider=mistral`.
+- Resolución de configuración por precedencia: request → env por proveedor → env global.
+- Soporte del modelo mini/equivalente documentado para despliegues iniciales.
+
+### Fuera de alcance en esta fase
+- Routing dinámico multi-modelo Mistral por coste/latencia.
+- Features específicas no cubiertas por Chat Completions OpenAI-compatible.
+- Políticas avanzadas de fallback multi-región.
+
+### Criterios de aceptación (Definition of Done)
+1. Variables documentadas y validadas: `MISTRAL_API_KEY`, `MISTRAL_MODEL`, `MISTRAL_BASE_URL`.
+2. Ejemplo funcional en `POST /nl2sql/query` con overrides `llm_*`.
+3. Validación de errores de configuración (`api_key`, `model`, `base_url`).
+4. Pruebas de wiring de gateway y precedencia de configuración.
+5. Smoke `--dry-run` con salida verificable y errores estructurados.
+
+### Riesgos y mitigaciones iniciales
+- **Rate limits / cuotas**: usar retry/backoff/circuit breaker existentes.
+- **Diferencias de compatibilidad de payload**: validar en tests de converter y smoke.
+- **Deriva entre docs y código**: mantener validación de sincronía en scripts de docs.
+
 ## Modelo mini/equivalente recomendado
 - `mistral-small-latest`
 
