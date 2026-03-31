@@ -106,11 +106,13 @@ Estado actual ya cubierto en código:
 - Default de modelo por proveedor para Hugging Face (`Qwen/Qwen2.5-3B-Instruct`).
 - Resolución por precedencia request → `HUGGINGFACE_*` → `LLM_*`.
 - Validación de `base_url` y manejo de errores de configuración en API/smoke.
+- Evidencia de wiring con tests de converter para:
+  - `serverless` (base URL default router),
+  - `dedicated endpoint` por override `llm_base_url`.
 
 Pendiente para cierre completo de Hito 2:
 
-1. Pruebas de integración dedicadas para escenario `serverless` vs `dedicated endpoint`.
-2. Evidencia de wiring end-to-end en `POST /nl2sql/query` con mocks de gateway Hugging Face.
+1. Prueba de integración end-to-end en `POST /nl2sql/query` validando contrato completo con mocks de pipeline.
 
 ## Modelo mini/equivalente recomendado
 - `Qwen/Qwen2.5-3B-Instruct`

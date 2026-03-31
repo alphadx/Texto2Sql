@@ -14,8 +14,10 @@ from app.llm.session_manager import InMemorySessionManager
 class _FakeGateway:
     def __init__(self, text: str):
         self._text = text
+        self.last_config = None
 
     def complete(self, config, messages):
+        self.last_config = config
         return LLMCompletionResult(
             text=self._text,
             provider=config.provider,
@@ -66,6 +68,50 @@ class TestConverterGatewayIntegration(unittest.TestCase):
         )
 
         self.assertEqual(sql, "SELECT 1")
+
+    @patch("app.llm.converter.get_gateway")
+    def test_refine_query_huggingface_serverless_default_wiring(self, mock_get_gateway):
+        fake_gateway = _FakeGateway("ok")
+        mock_get_gateway.return_value = fake_gateway
+        with patch.dict(
+            os.environ,
+            {
+                "LLM_PROVIDER": "huggingface",
+                "HUGGINGFACE_API_KEY": "hf-key",
+            },
+            clear=True,
+        ):
+            refined = refine_query(
+                session_id="s3",
+                natural_query="Usuarios activos",
+                schema="TABLE users(id int)",
+                session_manager=self.session_manager,
+                llm_options={"provider": "huggingface"},
+            )
+        self.assertEqual(refined, "ok")
+        self.assertEqual(fake_gateway.last_config.provider, "huggingface")
+        self.assertEqual(fake_gateway.last_config.model, "Qwen/Qwen2.5-3B-Instruct")
+        self.assertEqual(fake_gateway.last_config.base_url, "https://router.huggingface.co/v1")
+
+    @patch("app.llm.converter.get_gateway")
+    def test_refine_query_huggingface_dedicated_endpoint_wiring(self, mock_get_gateway):
+        fake_gateway = _FakeGateway("ok")
+        mock_get_gateway.return_value = fake_gateway
+        with patch.dict(os.environ, {"HUGGINGFACE_API_KEY": "hf-key"}, clear=True):
+            refined = refine_query(
+                session_id="s4",
+                natural_query="Usuarios activos",
+                schema="TABLE users(id int)",
+                session_manager=self.session_manager,
+                llm_options={
+                    "provider": "huggingface",
+                    "base_url": "https://dedicated.hf.endpoint/v1",
+                    "model": "Qwen/Qwen2.5-3B-Instruct",
+                },
+            )
+        self.assertEqual(refined, "ok")
+        self.assertEqual(fake_gateway.last_config.provider, "huggingface")
+        self.assertEqual(fake_gateway.last_config.base_url, "https://dedicated.hf.endpoint/v1")
 
 
 if __name__ == "__main__":
