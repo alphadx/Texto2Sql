@@ -1,5 +1,33 @@
 # Google
 
+## Estado de implementación (Hito 0: alineación)
+
+### Decisión inicial de integración
+- Gemini se integra mediante **gateway nativo** (`generateContent`) ya existente en el backend.
+- Se mantiene compatibilidad con override de `base_url` para entornos proxy/private gateway.
+
+### Alcance del primer release (no-GA)
+- Flujo NL→SQL con `llm_provider=gemini`.
+- Resolución de configuración por precedencia: request → env por proveedor → env global.
+- Mapeo de mensajes al formato Gemini (`system_instruction` + `contents`).
+
+### Fuera de alcance en esta fase
+- Tool calling nativo de Gemini.
+- Selección dinámica de modelo por coste/latencia.
+- Estrategias de caching específicas por modelo Gemini.
+
+### Criterios de aceptación (Definition of Done)
+1. Variables documentadas y validadas: `GEMINI_API_KEY`, `GEMINI_MODEL`, `GEMINI_BASE_URL`.
+2. Contrato de prompts equivalente al flujo de 2 agentes (refine + sql) sin romper formato de salida.
+3. Error handling consistente (rate limits, base URL inválida, API key ausente).
+4. Pruebas mínimas de wiring gateway + precedencia de config.
+5. Smoke `--dry-run` con salida verificable.
+
+### Riesgos y mitigaciones iniciales
+- **Cambios de API de Google**: aislar diferencias en gateway Gemini.
+- **Límites/cuotas**: aplicar retry/backoff/circuit breaker global.
+- **Deriva de prompts**: validar paridad funcional con baseline OpenAI-compatible en tests.
+
 ## Modelo mini/equivalente recomendado
 - `gemini-2.0-flash-lite`
 
