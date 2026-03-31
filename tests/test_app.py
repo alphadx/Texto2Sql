@@ -260,6 +260,39 @@ class TestQuerySuccess(unittest.TestCase):
         self.assertEqual(refine_opts["api_key"], "hf-key")
         self.assertEqual(refine_opts["base_url"], "https://dedicated.hf.endpoint/v1")
         self.assertEqual(sql_opts, refine_opts)
+
+    @patch("app.api.execute_query")
+    @patch("app.api.generate_sql")
+    @patch("app.api.refine_query")
+    @patch("app.api.get_schema")
+    @patch("app.api.create_engine")
+    def test_gemini_pipeline_options_are_forwarded_end_to_end(
+        self, _mock_engine, mock_schema, mock_refine, mock_sql, mock_exec
+    ):
+        mock_schema.return_value = ""
+        mock_refine.return_value = "desc"
+        mock_sql.return_value = "SELECT 1"
+        mock_exec.return_value = {"columns": [], "rows": []}
+
+        payload = dict(
+            _VALID_PAYLOAD,
+            llm_provider="gemini",
+            llm_model="gemini-2.0-flash-lite",
+            llm_api_key="g-key",
+            llm_base_url="https://generativelanguage.googleapis.com",
+        )
+
+        resp = self.client.post("/nl2sql/query", json=payload, headers=_auth_headers(scopes=["query:execute"]))
+        self.assertEqual(resp.status_code, 200)
+
+        refine_opts = mock_refine.call_args.kwargs["llm_options"]
+        sql_opts = mock_sql.call_args.kwargs["llm_options"]
+
+        self.assertEqual(refine_opts["provider"], "gemini")
+        self.assertEqual(refine_opts["model"], "gemini-2.0-flash-lite")
+        self.assertEqual(refine_opts["api_key"], "g-key")
+        self.assertEqual(refine_opts["base_url"], "https://generativelanguage.googleapis.com")
+        self.assertEqual(sql_opts, refine_opts)
     @patch("app.api.execute_query")
     @patch("app.api.generate_sql")
     @patch("app.api.refine_query")

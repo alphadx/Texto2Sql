@@ -109,7 +109,7 @@ Estado actual ya cubierto en código:
 
 Pendiente para cierre completo de Hito 2:
 
-1. Prueba e2e de `POST /nl2sql/query` con `llm_provider=gemini` y mocks de pipeline.
+- ✅ Prueba e2e de `POST /nl2sql/query` con `llm_provider=gemini` y mocks de pipeline (`tests/test_app.py`).
 
 ## Modelo mini/equivalente recomendado
 - `gemini-2.0-flash-lite`
