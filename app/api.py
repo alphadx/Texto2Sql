@@ -242,6 +242,15 @@ def _build_nl2sql_router(session_manager: SessionManager) -> APIRouter:
                         "retryable": exc.retryable,
                     },
                 ) from exc
+            except ValueError as exc:
+                logger.error("LLM config validation error: %s", exc)
+                error_type = "llm_config_validation_error"
+                error_message = str(exc)
+                status_code = 400
+                raise HTTPException(
+                    status_code=400,
+                    detail={"error": f"LLM config validation error: {exc}"},
+                ) from exc
             except Exception as exc:  # noqa: BLE001
                 logger.error("LLM error: %s", exc)
                 error_type = "llm_processing_error"

@@ -57,6 +57,43 @@ class TestRuntimeConfigResolution(unittest.TestCase):
             self.assertEqual(cfg.model, "mistral-large")
             self.assertEqual(cfg.base_url, "https://api.mistral.ai/v1")
 
+    def test_provider_specific_env_precedes_global(self):
+        with patch.dict(
+            os.environ,
+            {
+                "LLM_PROVIDER": "deepseek",
+                "LLM_API_KEY": "global-key",
+                "LLM_MODEL": "global-model",
+                "LLM_BASE_URL": "https://global.example/v1",
+                "DEEPSEEK_API_KEY": "deepseek-key",
+                "DEEPSEEK_MODEL": "deepseek-chat",
+                "DEEPSEEK_BASE_URL": "https://api.deepseek.com/v1",
+            },
+            clear=True,
+        ):
+            cfg = resolve_runtime_config()
+            self.assertEqual(cfg.provider, "deepseek")
+            self.assertEqual(cfg.api_key, "deepseek-key")
+            self.assertEqual(cfg.model, "deepseek-chat")
+            self.assertEqual(cfg.base_url, "https://api.deepseek.com/v1")
+
+    def test_invalid_base_url_raises(self):
+        with patch.dict(os.environ, {"LLM_PROVIDER": "deepseek", "DEEPSEEK_API_KEY": "k"}, clear=True):
+            with self.assertRaises(ValueError):
+                resolve_runtime_config({"base_url": "not-a-valid-url"})
+
+    def test_provider_default_model_is_used_when_model_missing(self):
+        with patch.dict(
+            os.environ,
+            {
+                "LLM_PROVIDER": "deepseek",
+                "DEEPSEEK_API_KEY": "k",
+            },
+            clear=True,
+        ):
+            cfg = resolve_runtime_config()
+            self.assertEqual(cfg.model, "deepseek-chat")
+
     def test_missing_api_key_raises(self):
         with patch.dict(os.environ, {}, clear=True):
             with self.assertRaises(RuntimeError):

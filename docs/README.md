@@ -76,9 +76,11 @@ Si se agrega soporte nativo para otros proveedores comerciales (Anthropic, Gemin
 
 ## 8) TODO de implementación (pendiente)
 
-Se acuerda dejar explícito el backlog para ampliar proveedores/modelos más allá de OpenAI-compatible:
+Se deja explícito el backlog para ampliar proveedores/modelos más allá de OpenAI-compatible.
 
-- [ ] **DeepSeek**: definir cliente oficial o compatibilidad OpenAI, variables de entorno y catálogo de modelos.
+> Alcance actual: este backlog documenta trabajo pendiente de producto/arquitectura; no implica soporte GA hasta cerrar criterios mínimos por proveedor.
+
+- [x] **DeepSeek**: integración inicial por compatibilidad OpenAI completada (pendiente evolución a cliente nativo solo si aparece brecha funcional).
 - [ ] **Hugging Face Inference**: definir integración (serverless/dedicated endpoint), autenticación y límites.
 - [ ] **Gemini (Google)**: agregar cliente/API, mapeo de modelos y estrategia de prompts equivalente.
 - [ ] **Mistral**: soporte de SDK/endpoint y configuración por entorno + request.

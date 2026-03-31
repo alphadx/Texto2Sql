@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
+from urllib.parse import urlparse
 
 _SUPPORTED_PROVIDERS = {
     "openai",
@@ -15,6 +16,23 @@ _SUPPORTED_PROVIDERS = {
     "llama",
     "copilot",
     "claude",  # alias aceptado para compatibilidad de configuración
+}
+
+_PROVIDER_ALIASES = {
+    "claude": "anthropic",
+    "google": "gemini",
+    "hf": "huggingface",
+}
+
+_DEFAULT_MODELS = {
+    "openai": "gpt-4",
+    "deepseek": "deepseek-chat",
+    "mistral": "mistral-small-latest",
+    "huggingface": "openai/gpt-oss-20b",
+    "anthropic": "claude-3-5-sonnet-latest",
+    "gemini": "gemini-2.0-flash",
+    "llama": "meta-llama/llama-3.1-8b-instruct",
+    "copilot": "gpt-4.1-mini",
 }
 
 
@@ -37,12 +55,16 @@ def _read(name: str, default: str = "") -> str:
 
 
 def load_llm_startup_settings_from_env() -> LLMStartupSettings:
-    provider = _read("LLM_PROVIDER", "openai").lower()
-    model = _read("LLM_MODEL", _read("OPENAI_MODEL", "gpt-4"))
-    base_url = _read("LLM_BASE_URL", _read("OPENAI_BASE_URL", ""))
+    provider_raw = _read("LLM_PROVIDER", "openai").lower()
+    provider = _PROVIDER_ALIASES.get(provider_raw, provider_raw)
 
     provider_prefix = provider.upper().replace("-", "_")
-    api_key = _read("LLM_API_KEY", _read(f"{provider_prefix}_API_KEY", _read("OPENAI_API_KEY", "")))
+    model = _read(
+        "LLM_MODEL",
+        _read(f"{provider_prefix}_MODEL", _read("OPENAI_MODEL", _DEFAULT_MODELS.get(provider, "gpt-4"))),
+    )
+    base_url = _read("LLM_BASE_URL", _read(f"{provider_prefix}_BASE_URL", _read("OPENAI_BASE_URL", "")))
+    api_key = _read(f"{provider_prefix}_API_KEY", _read("LLM_API_KEY", _read("OPENAI_API_KEY", "")))
 
     startup_validate = _read("LLM_STARTUP_VALIDATE", "false").lower() in {"1", "true", "yes"}
 
@@ -82,3 +104,7 @@ def validate_llm_startup_settings(settings: LLMStartupSettings) -> None:
             "LLM_STARTUP_VALIDATE=true requires API key at startup "
             "(LLM_API_KEY or <PROVIDER>_API_KEY/OPENAI_API_KEY)."
         )
+    if settings.base_url:
+        parsed = urlparse(settings.base_url)
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            raise RuntimeError("LLM_BASE_URL/<PROVIDER>_BASE_URL must be an absolute http(s) URL")
