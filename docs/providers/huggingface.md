@@ -112,7 +112,7 @@ Estado actual ya cubierto en código:
 
 Pendiente para cierre completo de Hito 2:
 
-1. Prueba de integración end-to-end en `POST /nl2sql/query` validando contrato completo con mocks de pipeline.
+- ✅ Prueba de integración end-to-end en `POST /nl2sql/query` con mocks de pipeline (`tests/test_app.py`).
 
 ## Modelo mini/equivalente recomendado
 - `Qwen/Qwen2.5-3B-Instruct`

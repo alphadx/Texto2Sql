@@ -227,6 +227,39 @@ class TestQuerySuccess(unittest.TestCase):
         self.assertEqual(refine_opts["api_key"], "key-123")
         self.assertEqual(refine_opts["base_url"], "https://example.test/v1")
         self.assertEqual(sql_opts, refine_opts)
+
+    @patch("app.api.execute_query")
+    @patch("app.api.generate_sql")
+    @patch("app.api.refine_query")
+    @patch("app.api.get_schema")
+    @patch("app.api.create_engine")
+    def test_huggingface_pipeline_options_are_forwarded_end_to_end(
+        self, _mock_engine, mock_schema, mock_refine, mock_sql, mock_exec
+    ):
+        mock_schema.return_value = ""
+        mock_refine.return_value = "desc"
+        mock_sql.return_value = "SELECT 1"
+        mock_exec.return_value = {"columns": [], "rows": []}
+
+        payload = dict(
+            _VALID_PAYLOAD,
+            llm_provider="huggingface",
+            llm_model="Qwen/Qwen2.5-3B-Instruct",
+            llm_api_key="hf-key",
+            llm_base_url="https://dedicated.hf.endpoint/v1",
+        )
+
+        resp = self.client.post("/nl2sql/query", json=payload, headers=_auth_headers(scopes=["query:execute"]))
+        self.assertEqual(resp.status_code, 200)
+
+        refine_opts = mock_refine.call_args.kwargs["llm_options"]
+        sql_opts = mock_sql.call_args.kwargs["llm_options"]
+
+        self.assertEqual(refine_opts["provider"], "huggingface")
+        self.assertEqual(refine_opts["model"], "Qwen/Qwen2.5-3B-Instruct")
+        self.assertEqual(refine_opts["api_key"], "hf-key")
+        self.assertEqual(refine_opts["base_url"], "https://dedicated.hf.endpoint/v1")
+        self.assertEqual(sql_opts, refine_opts)
     @patch("app.api.execute_query")
     @patch("app.api.generate_sql")
     @patch("app.api.refine_query")
