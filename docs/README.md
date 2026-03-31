@@ -81,7 +81,7 @@ Se deja explícito el backlog para ampliar proveedores/modelos más allá de Ope
 > Alcance actual: este backlog documenta trabajo pendiente de producto/arquitectura; no implica soporte GA hasta cerrar criterios mínimos por proveedor.
 
 - [x] **DeepSeek**: integración inicial por compatibilidad OpenAI completada (pendiente evolución a cliente nativo solo si aparece brecha funcional).
-- [ ] **Hugging Face Inference**: definir integración (serverless/dedicated endpoint), autenticación y límites. *(Hito 0 de alineación documentado en `docs/providers/huggingface.md`.)*
+- [ ] **Hugging Face Inference**: definir integración (serverless/dedicated endpoint), autenticación y límites. *(Hitos 0 y 1 documentados en `docs/providers/huggingface.md`; pendiente implementación.)*
 - [ ] **Gemini (Google)**: agregar cliente/API, mapeo de modelos y estrategia de prompts equivalente.
 - [ ] **Mistral**: soporte de SDK/endpoint y configuración por entorno + request.
 - [ ] **Claude (Anthropic)**: cliente dedicado, manejo de mensajes y compatibilidad con el flujo de 2 agentes.

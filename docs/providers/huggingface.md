@@ -30,6 +30,75 @@
 - **Diferencias de disponibilidad de modelos**: validar modelo al arranque y en smoke por entorno.
 - **Variación de latencia serverless**: permitir dedicated endpoint como estrategia de estabilidad.
 
+## Hito 1 — Diseño técnico detallado
+
+### 1) Mapeo de configuración (entorno + request)
+
+| Nivel | Campo/variable | Uso en Hugging Face | Regla |
+|---|---|---|---|
+| Request (prioridad máxima) | `llm_provider` | selección de proveedor | debe resolver a `huggingface` |
+| Request | `llm_model` | modelo runtime | pisa defaults/env |
+| Request | `llm_api_key` | token runtime | preferente en multi-tenant |
+| Request | `llm_base_url` | endpoint runtime | permite dedicated endpoint |
+| Entorno por proveedor | `HUGGINGFACE_MODEL` | default de modelo | aplica si falta `llm_model` |
+| Entorno por proveedor | `HUGGINGFACE_API_KEY` | token default | aplica si falta `llm_api_key` |
+| Entorno por proveedor | `HUGGINGFACE_BASE_URL` | endpoint default | aplica si falta `llm_base_url` |
+| Entorno global | `LLM_MODEL` / `LLM_API_KEY` / `LLM_BASE_URL` | fallback transversal | último fallback antes de defaults internos |
+
+### 2) Precedencia propuesta (algoritmo canónico)
+
+1. Resolver proveedor desde `llm_provider` o `LLM_PROVIDER`.
+2. Si proveedor = `huggingface`, tomar `model/api_key/base_url` desde request `llm_*`.
+3. Completar faltantes con `HUGGINGFACE_*`.
+4. Completar faltantes con `LLM_*` globales.
+5. Si falta `api_key`, retornar error de configuración explícito (sin reintento).
+6. Si falta `base_url`, usar default router: `https://router.huggingface.co/v1`.
+
+### 3) Contrato runtime para `POST /nl2sql/query`
+
+Payload mínimo recomendado:
+
+```json
+{
+  "question": "Top 5 clientes por facturación",
+  "llm_provider": "huggingface",
+  "llm_model": "Qwen/Qwen2.5-3B-Instruct"
+}
+```
+
+Payload con dedicated endpoint:
+
+```json
+{
+  "question": "Top 5 clientes por facturación",
+  "llm_provider": "huggingface",
+  "llm_model": "Qwen/Qwen2.5-3B-Instruct",
+  "llm_api_key": "***",
+  "llm_base_url": "https://<tu-endpoint-dedicado>/v1"
+}
+```
+
+### 4) Errores esperados (diseño)
+
+- `provider_not_supported`: proveedor inválido/no normalizable.
+- `missing_api_key`: faltan `llm_api_key`, `HUGGINGFACE_API_KEY` y `LLM_API_KEY`.
+- `invalid_base_url`: URL inválida o esquema no permitido.
+- `provider_http_error`: error HTTP no recuperable en router/endpoint.
+- `rate_limited`: límite de cuota/rate limit (tratar como retryable según status).
+
+> Requisito transversal: no exponer secretos (`api_key`, headers auth) en logs o errores.
+
+### 5) Plan de pruebas por capas (hito 1)
+
+- **Unitarias (resolución de config):** matriz request/env-provider/env-global con caso Hugging Face.
+- **Unitarias (validación):** `base_url` inválida, API key ausente, provider inválido.
+- **Integración liviana (gateway mock):** `llm_provider=huggingface` con respuesta normalizada.
+- **Smoke dry-run:** validar wiring `serverless` vs `dedicated endpoint` sin llamada real.
+
+### 6) Criterio de salida del Hito 1
+
+Hito 1 se cierra cuando precedencia, contrato runtime, errores esperados y plan de pruebas queden documentados y listos para implementación del Hito 2.
+
 ## Modelo mini/equivalente recomendado
 - `Qwen/Qwen2.5-3B-Instruct`
 
