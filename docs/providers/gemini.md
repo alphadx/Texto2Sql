@@ -50,7 +50,7 @@
 3. Completar faltantes con `GEMINI_*`.
 4. Completar faltantes con `LLM_*` globales.
 5. Si falta `api_key`, retornar error explícito de configuración.
-6. Si falta `base_url`, usar default Gemini (`https://generativelanguage.googleapis.com`).
+6. Si falta `base_url`, el gateway Gemini aplica default interno (`https://generativelanguage.googleapis.com`).
 
 ### 3) Contrato runtime para `POST /nl2sql/query`
 
@@ -96,6 +96,20 @@ Payload con override completo:
 ### 6) Criterio de salida del Hito 1
 
 Hito 1 se cierra cuando precedencia, contrato runtime, errores y plan de pruebas queden documentados para implementación del Hito 2.
+
+## Hito 2 — Avance de implementación (actual)
+
+Estado actual ya cubierto en código:
+
+- Gateway nativo Gemini con mapping de mensajes (`system_instruction` + `contents`).
+- Default de modelo por proveedor alineado al catálogo (`gemini-2.0-flash-lite`).
+- Resolución de configuración por precedencia request → `GEMINI_*` → `LLM_*`.
+- Validación de `base_url` y manejo de errores de configuración en API/smoke.
+- Evidencia de wiring en converter para flujo Gemini (`tests/test_llm_converter.py`).
+
+Pendiente para cierre completo de Hito 2:
+
+1. Prueba e2e de `POST /nl2sql/query` con `llm_provider=gemini` y mocks de pipeline.
 
 ## Modelo mini/equivalente recomendado
 - `gemini-2.0-flash-lite`

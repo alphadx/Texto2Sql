@@ -113,6 +113,30 @@ class TestConverterGatewayIntegration(unittest.TestCase):
         self.assertEqual(fake_gateway.last_config.provider, "huggingface")
         self.assertEqual(fake_gateway.last_config.base_url, "https://dedicated.hf.endpoint/v1")
 
+    @patch("app.llm.converter.get_gateway")
+    def test_refine_query_gemini_default_wiring(self, mock_get_gateway):
+        fake_gateway = _FakeGateway("ok")
+        mock_get_gateway.return_value = fake_gateway
+        with patch.dict(
+            os.environ,
+            {
+                "LLM_PROVIDER": "gemini",
+                "GEMINI_API_KEY": "g-key",
+            },
+            clear=True,
+        ):
+            refined = refine_query(
+                session_id="s5",
+                natural_query="Usuarios activos",
+                schema="TABLE users(id int)",
+                session_manager=self.session_manager,
+                llm_options={"provider": "gemini"},
+            )
+        self.assertEqual(refined, "ok")
+        self.assertEqual(fake_gateway.last_config.provider, "gemini")
+        self.assertEqual(fake_gateway.last_config.model, "gemini-2.0-flash-lite")
+        self.assertIsNone(fake_gateway.last_config.base_url)
+
 
 if __name__ == "__main__":
     unittest.main()

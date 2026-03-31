@@ -58,6 +58,12 @@ class TestLLMSettings(unittest.TestCase):
         self.assertEqual(settings.model, "Qwen/Qwen2.5-3B-Instruct")
         self.assertEqual(settings.api_key, "hf-key")
 
+    def test_gemini_defaults_are_used(self):
+        with patch.dict(os.environ, {"LLM_PROVIDER": "gemini", "GEMINI_API_KEY": "g-key"}, clear=True):
+            settings = load_llm_startup_settings_from_env()
+        self.assertEqual(settings.model, "gemini-2.0-flash-lite")
+        self.assertEqual(settings.api_key, "g-key")
+
     def test_provider_api_key_precedes_global(self):
         with patch.dict(
             os.environ,

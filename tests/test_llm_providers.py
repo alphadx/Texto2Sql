@@ -106,6 +106,18 @@ class TestRuntimeConfigResolution(unittest.TestCase):
             cfg = resolve_runtime_config()
             self.assertEqual(cfg.model, "Qwen/Qwen2.5-3B-Instruct")
 
+    def test_gemini_provider_default_model_is_used_when_model_missing(self):
+        with patch.dict(
+            os.environ,
+            {
+                "LLM_PROVIDER": "gemini",
+                "GEMINI_API_KEY": "g-key",
+            },
+            clear=True,
+        ):
+            cfg = resolve_runtime_config()
+            self.assertEqual(cfg.model, "gemini-2.0-flash-lite")
+
     def test_missing_api_key_raises(self):
         with patch.dict(os.environ, {}, clear=True):
             with self.assertRaises(RuntimeError):
