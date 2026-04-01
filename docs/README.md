@@ -85,7 +85,7 @@ Se deja explícito el backlog para ampliar proveedores/modelos más allá de Ope
 - [x] **Gemini (Google)**: integración v1 completada (gateway nativo `generateContent`, mapeo de prompts y soporte por request/env).
 - [x] **Mistral**: integración v1 completada (OpenAI-compatible `chat/completions` con soporte por request/env y validación de configuración).
 - [x] **Claude (Anthropic)**: integración v1 completada (gateway nativo `messages`, alias `claude` y soporte por request/env con validación de configuración).
-- [ ] **Llama** (proveedores comerciales/hosted): definir variantes soportadas y endpoint objetivo.
+- [ ] **Llama** (proveedores comerciales/hosted): definir variantes soportadas y endpoint objetivo. *(Hitos 0 y 1 documentados en `docs/providers/llama.md`; pendiente implementación.)*
 - [ ] **Copilot** (escenario enterprise): evaluar alcance técnico real para uso como backend programático.
 
 ### Criterios mínimos para cerrar cada TODO
