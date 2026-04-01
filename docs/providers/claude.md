@@ -28,6 +28,76 @@
 - **Límites/cuotas**: reutilizar retry/backoff/circuit breaker global.
 - **Evolución de API**: encapsular cambios en gateway nativo para no romper contrato NL→SQL.
 
+## Hito 1 — Diseño técnico detallado
+
+### 1) Mapeo de configuración (entorno + request)
+
+| Nivel | Campo/variable | Uso en Claude/Anthropic | Regla |
+|---|---|---|---|
+| Request (prioridad máxima) | `llm_provider` | selección de proveedor | acepta `claude` o `anthropic` |
+| Request | `llm_model` | modelo runtime | pisa defaults/env |
+| Request | `llm_api_key` | credencial runtime | prioritaria en multi-tenant |
+| Request | `llm_base_url` | endpoint runtime | habilita proxy/gateway dedicado |
+| Entorno por proveedor | `ANTHROPIC_MODEL` | default de modelo | aplica si no llega `llm_model` |
+| Entorno por proveedor | `ANTHROPIC_API_KEY` | credencial default | aplica si no llega `llm_api_key` |
+| Entorno por proveedor | `ANTHROPIC_BASE_URL` | endpoint default | aplica si no llega `llm_base_url` |
+| Entorno global | `LLM_MODEL` / `LLM_API_KEY` / `LLM_BASE_URL` | fallback transversal | último fallback antes de defaults internos |
+
+### 2) Precedencia propuesta (algoritmo canónico)
+
+1. Resolver proveedor desde `llm_provider` o `LLM_PROVIDER`.
+2. Normalizar alias `claude -> anthropic`.
+3. Tomar `model/api_key/base_url` desde request `llm_*`.
+4. Completar faltantes con `ANTHROPIC_*`.
+5. Completar faltantes con `LLM_*`.
+6. Si falta `api_key`, retornar error de configuración explícito.
+7. Si falta `base_url`, usar default Anthropic (`https://api.anthropic.com`).
+
+### 3) Contrato runtime para `POST /nl2sql/query`
+
+Payload mínimo recomendado:
+
+```json
+{
+  "question": "Top 5 clientes por facturación",
+  "llm_provider": "claude",
+  "llm_model": "claude-3-5-haiku-latest"
+}
+```
+
+Payload con override completo:
+
+```json
+{
+  "question": "Top 5 clientes por facturación",
+  "llm_provider": "claude",
+  "llm_model": "claude-3-5-haiku-latest",
+  "llm_api_key": "***",
+  "llm_base_url": "https://api.anthropic.com"
+}
+```
+
+### 4) Errores esperados (diseño)
+
+- `provider_not_supported`: proveedor inválido/no normalizable.
+- `missing_api_key`: faltan `llm_api_key`, `ANTHROPIC_API_KEY` y `LLM_API_KEY`.
+- `invalid_base_url`: URL inválida o esquema no permitido.
+- `provider_http_error`: error HTTP no recuperable en `/v1/messages`.
+- `rate_limited`: límites de cuota/rate limit (retryable según status).
+
+> Requisito transversal: no exponer API keys ni secretos en logs o payloads de error.
+
+### 5) Plan de pruebas por capas (hito 1)
+
+- **Unitarias (resolución de config):** alias + precedencia request/env-provider/env-global.
+- **Unitarias (gateway):** transformación `system` + mensajes en contrato Anthropic.
+- **Integración liviana:** flujo refine/sql con provider `claude`.
+- **Smoke dry-run:** validar wiring sin llamadas reales.
+
+### 6) Criterio de salida del Hito 1
+
+Hito 1 se cierra cuando precedencia, contrato runtime, errores y plan de pruebas queden documentados para implementación del Hito 2.
+
 ## Modelo mini/equivalente recomendado
 - `claude-3-5-haiku-latest`
 
