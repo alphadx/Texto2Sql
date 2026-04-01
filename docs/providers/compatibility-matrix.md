@@ -10,6 +10,8 @@
 | Google | `gemini-2.0-flash-lite` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Mistral | `mistral-small-latest` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Anthropic Claude | `claude-3-5-haiku-latest` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Alibaba Cloud | `qwen-plus` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Moonshot AI | `kimi-k2` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Meta | `meta-llama/Llama-3.1-8B-Instruct` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | GitHub | `gpt-4.1-mini` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 
