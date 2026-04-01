@@ -1,5 +1,33 @@
 # GitHub
 
+## Estado de implementación (Hito 0: alineación)
+
+### Decisión inicial de integración
+- Copilot se considera en fase de **evaluación enterprise** con enfoque OpenAI-compatible donde aplique.
+- La integración v1 se limita a backend programático explícitamente soportado por credenciales/tenant corporativo.
+
+### Alcance del primer release (no-GA)
+- Validar viabilidad técnica real de uso como backend NL→SQL.
+- Definir configuración mínima por entorno (`api_key`, `model`, `base_url`) y contrato por request.
+- Confirmar restricciones de seguridad/compliance para uso server-to-server.
+
+### Fuera de alcance en esta fase
+- Integración acoplada a UX de IDE/cliente Copilot.
+- Supuestos de disponibilidad universal sin validación de tenant/licencia.
+- Soporte contractual multi-org sin validación previa de permisos.
+
+### Criterios de aceptación (Definition of Done)
+1. Alcance técnico enterprise claramente delimitado (qué sí/qué no soporta backend).
+2. Variables documentadas y validadas: `COPILOT_API_KEY`, `COPILOT_MODEL`, `COPILOT_BASE_URL`.
+3. Ejemplo funcional en `POST /nl2sql/query` con `llm_provider=copilot`.
+4. Pruebas de wiring/configuración y manejo de errores de autenticación/autorización.
+5. Smoke `--dry-run` y checklist de precondiciones enterprise.
+
+### Riesgos y mitigaciones iniciales
+- **Ambigüedad de soporte programático**: validar fuentes oficiales + pruebas controladas por tenant.
+- **Restricciones de seguridad/licenciamiento**: documentar prerequisitos antes de habilitar producción.
+- **Dependencia de endpoint/credencial específica**: aislar configuración por entorno.
+
 ## Modelo mini/equivalente recomendado
 - `gpt-4.1-mini`
 
