@@ -64,6 +64,12 @@ class TestLLMSettings(unittest.TestCase):
         self.assertEqual(settings.model, "gemini-2.0-flash-lite")
         self.assertEqual(settings.api_key, "g-key")
 
+    def test_claude_alias_default_model_is_used(self):
+        with patch.dict(os.environ, {"LLM_PROVIDER": "claude", "ANTHROPIC_API_KEY": "a-key"}, clear=True):
+            settings = load_llm_startup_settings_from_env()
+        self.assertEqual(settings.provider, "anthropic")
+        self.assertEqual(settings.model, "claude-3-5-haiku-latest")
+
     def test_provider_api_key_precedes_global(self):
         with patch.dict(
             os.environ,

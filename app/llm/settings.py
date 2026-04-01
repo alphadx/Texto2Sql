@@ -29,7 +29,7 @@ _DEFAULT_MODELS = {
     "deepseek": "deepseek-chat",
     "mistral": "mistral-small-latest",
     "huggingface": "Qwen/Qwen2.5-3B-Instruct",
-    "anthropic": "claude-3-5-sonnet-latest",
+    "anthropic": "claude-3-5-haiku-latest",
     "gemini": "gemini-2.0-flash-lite",
     "llama": "meta-llama/llama-3.1-8b-instruct",
     "copilot": "gpt-4.1-mini",

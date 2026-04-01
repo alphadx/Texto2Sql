@@ -161,6 +161,30 @@ class TestConverterGatewayIntegration(unittest.TestCase):
         self.assertEqual(fake_gateway.last_config.model, "mistral-small-latest")
         self.assertEqual(fake_gateway.last_config.base_url, "https://api.mistral.ai/v1")
 
+    @patch("app.llm.converter.get_gateway")
+    def test_refine_query_claude_alias_wiring(self, mock_get_gateway):
+        fake_gateway = _FakeGateway("ok")
+        mock_get_gateway.return_value = fake_gateway
+        with patch.dict(
+            os.environ,
+            {
+                "LLM_PROVIDER": "claude",
+                "ANTHROPIC_API_KEY": "a-key",
+            },
+            clear=True,
+        ):
+            refined = refine_query(
+                session_id="s7",
+                natural_query="Usuarios activos",
+                schema="TABLE users(id int)",
+                session_manager=self.session_manager,
+                llm_options={"provider": "claude"},
+            )
+        self.assertEqual(refined, "ok")
+        self.assertEqual(fake_gateway.last_config.provider, "anthropic")
+        self.assertEqual(fake_gateway.last_config.model, "claude-3-5-haiku-latest")
+        self.assertIsNone(fake_gateway.last_config.base_url)
+
 
 if __name__ == "__main__":
     unittest.main()

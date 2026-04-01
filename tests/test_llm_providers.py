@@ -118,6 +118,19 @@ class TestRuntimeConfigResolution(unittest.TestCase):
             cfg = resolve_runtime_config()
             self.assertEqual(cfg.model, "gemini-2.0-flash-lite")
 
+    def test_claude_alias_uses_anthropic_default_model(self):
+        with patch.dict(
+            os.environ,
+            {
+                "LLM_PROVIDER": "claude",
+                "ANTHROPIC_API_KEY": "a-key",
+            },
+            clear=True,
+        ):
+            cfg = resolve_runtime_config()
+            self.assertEqual(cfg.provider, "anthropic")
+            self.assertEqual(cfg.model, "claude-3-5-haiku-latest")
+
     def test_missing_api_key_raises(self):
         with patch.dict(os.environ, {}, clear=True):
             with self.assertRaises(RuntimeError):

@@ -98,6 +98,20 @@ Payload con override completo:
 
 Hito 1 se cierra cuando precedencia, contrato runtime, errores y plan de pruebas queden documentados para implementación del Hito 2.
 
+## Hito 2 — Avance de implementación (actual)
+
+Estado actual ya cubierto en código:
+
+- Gateway nativo Anthropic para `/v1/messages`.
+- Soporte de alias `claude -> anthropic` en runtime/startup.
+- Default de modelo por proveedor (`claude-3-5-haiku-latest`) alineado al catálogo.
+- Validación de `base_url` y manejo consistente de errores de configuración en API/smoke.
+- Evidencia de wiring en converter y endpoint API (`tests/test_llm_converter.py`, `tests/test_app.py`).
+
+Pendiente para cierre completo de Hito 2:
+
+- ✅ Prueba e2e de `POST /nl2sql/query` con `llm_provider=claude` y mocks de pipeline (`tests/test_app.py`).
+
 ## Modelo mini/equivalente recomendado
 - `claude-3-5-haiku-latest`
 
