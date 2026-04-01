@@ -8,5 +8,7 @@
 - `gemini` -> `docs/providers/sdk/gemini/`
 - `mistral` -> `docs/providers/sdk/mistral/`
 - `claude` -> `docs/providers/sdk/claude/`
+- `qwen` -> `docs/providers/sdk/qwen/`
+- `kimi` -> `docs/providers/sdk/kimi/`
 - `llama` -> `docs/providers/sdk/llama/`
 - `copilot` -> `docs/providers/sdk/copilot/`

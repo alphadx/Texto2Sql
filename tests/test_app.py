@@ -227,6 +227,237 @@ class TestQuerySuccess(unittest.TestCase):
         self.assertEqual(refine_opts["api_key"], "key-123")
         self.assertEqual(refine_opts["base_url"], "https://example.test/v1")
         self.assertEqual(sql_opts, refine_opts)
+
+    @patch("app.api.execute_query")
+    @patch("app.api.generate_sql")
+    @patch("app.api.refine_query")
+    @patch("app.api.get_schema")
+    @patch("app.api.create_engine")
+    def test_huggingface_pipeline_options_are_forwarded_end_to_end(
+        self, _mock_engine, mock_schema, mock_refine, mock_sql, mock_exec
+    ):
+        mock_schema.return_value = ""
+        mock_refine.return_value = "desc"
+        mock_sql.return_value = "SELECT 1"
+        mock_exec.return_value = {"columns": [], "rows": []}
+
+        payload = dict(
+            _VALID_PAYLOAD,
+            llm_provider="huggingface",
+            llm_model="Qwen/Qwen2.5-3B-Instruct",
+            llm_api_key="hf-key",
+            llm_base_url="https://dedicated.hf.endpoint/v1",
+        )
+
+        resp = self.client.post("/nl2sql/query", json=payload, headers=_auth_headers(scopes=["query:execute"]))
+        self.assertEqual(resp.status_code, 200)
+
+        refine_opts = mock_refine.call_args.kwargs["llm_options"]
+        sql_opts = mock_sql.call_args.kwargs["llm_options"]
+
+        self.assertEqual(refine_opts["provider"], "huggingface")
+        self.assertEqual(refine_opts["model"], "Qwen/Qwen2.5-3B-Instruct")
+        self.assertEqual(refine_opts["api_key"], "hf-key")
+        self.assertEqual(refine_opts["base_url"], "https://dedicated.hf.endpoint/v1")
+        self.assertEqual(sql_opts, refine_opts)
+
+    @patch("app.api.execute_query")
+    @patch("app.api.generate_sql")
+    @patch("app.api.refine_query")
+    @patch("app.api.get_schema")
+    @patch("app.api.create_engine")
+    def test_gemini_pipeline_options_are_forwarded_end_to_end(
+        self, _mock_engine, mock_schema, mock_refine, mock_sql, mock_exec
+    ):
+        mock_schema.return_value = ""
+        mock_refine.return_value = "desc"
+        mock_sql.return_value = "SELECT 1"
+        mock_exec.return_value = {"columns": [], "rows": []}
+
+        payload = dict(
+            _VALID_PAYLOAD,
+            llm_provider="gemini",
+            llm_model="gemini-2.0-flash-lite",
+            llm_api_key="g-key",
+            llm_base_url="https://generativelanguage.googleapis.com",
+        )
+
+        resp = self.client.post("/nl2sql/query", json=payload, headers=_auth_headers(scopes=["query:execute"]))
+        self.assertEqual(resp.status_code, 200)
+
+        refine_opts = mock_refine.call_args.kwargs["llm_options"]
+        sql_opts = mock_sql.call_args.kwargs["llm_options"]
+
+        self.assertEqual(refine_opts["provider"], "gemini")
+        self.assertEqual(refine_opts["model"], "gemini-2.0-flash-lite")
+        self.assertEqual(refine_opts["api_key"], "g-key")
+        self.assertEqual(refine_opts["base_url"], "https://generativelanguage.googleapis.com")
+        self.assertEqual(sql_opts, refine_opts)
+
+    @patch("app.api.execute_query")
+    @patch("app.api.generate_sql")
+    @patch("app.api.refine_query")
+    @patch("app.api.get_schema")
+    @patch("app.api.create_engine")
+    def test_mistral_pipeline_options_are_forwarded_end_to_end(
+        self, _mock_engine, mock_schema, mock_refine, mock_sql, mock_exec
+    ):
+        mock_schema.return_value = ""
+        mock_refine.return_value = "desc"
+        mock_sql.return_value = "SELECT 1"
+        mock_exec.return_value = {"columns": [], "rows": []}
+
+        payload = dict(
+            _VALID_PAYLOAD,
+            llm_provider="mistral",
+            llm_model="mistral-small-latest",
+            llm_api_key="m-key",
+            llm_base_url="https://api.mistral.ai/v1",
+        )
+
+        resp = self.client.post("/nl2sql/query", json=payload, headers=_auth_headers(scopes=["query:execute"]))
+        self.assertEqual(resp.status_code, 200)
+
+        refine_opts = mock_refine.call_args.kwargs["llm_options"]
+        sql_opts = mock_sql.call_args.kwargs["llm_options"]
+
+        self.assertEqual(refine_opts["provider"], "mistral")
+        self.assertEqual(refine_opts["model"], "mistral-small-latest")
+        self.assertEqual(refine_opts["api_key"], "m-key")
+        self.assertEqual(refine_opts["base_url"], "https://api.mistral.ai/v1")
+        self.assertEqual(sql_opts, refine_opts)
+
+    @patch("app.api.execute_query")
+    @patch("app.api.generate_sql")
+    @patch("app.api.refine_query")
+    @patch("app.api.get_schema")
+    @patch("app.api.create_engine")
+    def test_claude_pipeline_options_are_forwarded_end_to_end(
+        self, _mock_engine, mock_schema, mock_refine, mock_sql, mock_exec
+    ):
+        mock_schema.return_value = ""
+        mock_refine.return_value = "desc"
+        mock_sql.return_value = "SELECT 1"
+        mock_exec.return_value = {"columns": [], "rows": []}
+
+        payload = dict(
+            _VALID_PAYLOAD,
+            llm_provider="claude",
+            llm_model="claude-3-5-haiku-latest",
+            llm_api_key="a-key",
+            llm_base_url="https://api.anthropic.com",
+        )
+
+        resp = self.client.post("/nl2sql/query", json=payload, headers=_auth_headers(scopes=["query:execute"]))
+        self.assertEqual(resp.status_code, 200)
+
+        refine_opts = mock_refine.call_args.kwargs["llm_options"]
+        sql_opts = mock_sql.call_args.kwargs["llm_options"]
+
+        self.assertEqual(refine_opts["provider"], "claude")
+        self.assertEqual(refine_opts["model"], "claude-3-5-haiku-latest")
+        self.assertEqual(refine_opts["api_key"], "a-key")
+        self.assertEqual(refine_opts["base_url"], "https://api.anthropic.com")
+        self.assertEqual(sql_opts, refine_opts)
+
+    @patch("app.api.execute_query")
+    @patch("app.api.generate_sql")
+    @patch("app.api.refine_query")
+    @patch("app.api.get_schema")
+    @patch("app.api.create_engine")
+    def test_llama_pipeline_options_are_forwarded_end_to_end(
+        self, _mock_engine, mock_schema, mock_refine, mock_sql, mock_exec
+    ):
+        mock_schema.return_value = ""
+        mock_refine.return_value = "desc"
+        mock_sql.return_value = "SELECT 1"
+        mock_exec.return_value = {"columns": [], "rows": []}
+
+        payload = dict(
+            _VALID_PAYLOAD,
+            llm_provider="llama",
+            llm_model="meta-llama/Llama-3.1-8B-Instruct",
+            llm_api_key="l-key",
+            llm_base_url="https://router.huggingface.co/v1",
+        )
+
+        resp = self.client.post("/nl2sql/query", json=payload, headers=_auth_headers(scopes=["query:execute"]))
+        self.assertEqual(resp.status_code, 200)
+
+        refine_opts = mock_refine.call_args.kwargs["llm_options"]
+        sql_opts = mock_sql.call_args.kwargs["llm_options"]
+
+        self.assertEqual(refine_opts["provider"], "llama")
+        self.assertEqual(refine_opts["model"], "meta-llama/Llama-3.1-8B-Instruct")
+        self.assertEqual(refine_opts["api_key"], "l-key")
+        self.assertEqual(refine_opts["base_url"], "https://router.huggingface.co/v1")
+        self.assertEqual(sql_opts, refine_opts)
+
+    @patch("app.api.execute_query")
+    @patch("app.api.generate_sql")
+    @patch("app.api.refine_query")
+    @patch("app.api.get_schema")
+    @patch("app.api.create_engine")
+    def test_copilot_pipeline_options_are_forwarded_end_to_end(
+        self, _mock_engine, mock_schema, mock_refine, mock_sql, mock_exec
+    ):
+        mock_schema.return_value = ""
+        mock_refine.return_value = "desc"
+        mock_sql.return_value = "SELECT 1"
+        mock_exec.return_value = {"columns": [], "rows": []}
+
+        payload = dict(
+            _VALID_PAYLOAD,
+            llm_provider="copilot",
+            llm_model="gpt-4.1-mini",
+            llm_api_key="c-key",
+            llm_base_url="https://models.inference.ai.azure.com",
+        )
+
+        resp = self.client.post("/nl2sql/query", json=payload, headers=_auth_headers(scopes=["query:execute"]))
+        self.assertEqual(resp.status_code, 200)
+
+        refine_opts = mock_refine.call_args.kwargs["llm_options"]
+        sql_opts = mock_sql.call_args.kwargs["llm_options"]
+
+        self.assertEqual(refine_opts["provider"], "copilot")
+        self.assertEqual(refine_opts["model"], "gpt-4.1-mini")
+        self.assertEqual(refine_opts["api_key"], "c-key")
+        self.assertEqual(refine_opts["base_url"], "https://models.inference.ai.azure.com")
+        self.assertEqual(sql_opts, refine_opts)
+
+    @patch("app.api.execute_query")
+    @patch("app.api.generate_sql")
+    @patch("app.api.refine_query")
+    @patch("app.api.get_schema")
+    @patch("app.api.create_engine")
+    def test_qwen_pipeline_options_are_forwarded_end_to_end(
+        self, _mock_engine, mock_schema, mock_refine, mock_sql, mock_exec
+    ):
+        mock_schema.return_value = ""
+        mock_refine.return_value = "desc"
+        mock_sql.return_value = "SELECT 1"
+        mock_exec.return_value = {"columns": [], "rows": []}
+
+        payload = dict(
+            _VALID_PAYLOAD,
+            llm_provider="qwen",
+            llm_model="qwen-plus",
+            llm_api_key="q-key",
+            llm_base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+        )
+
+        resp = self.client.post("/nl2sql/query", json=payload, headers=_auth_headers(scopes=["query:execute"]))
+        self.assertEqual(resp.status_code, 200)
+
+        refine_opts = mock_refine.call_args.kwargs["llm_options"]
+        sql_opts = mock_sql.call_args.kwargs["llm_options"]
+
+        self.assertEqual(refine_opts["provider"], "qwen")
+        self.assertEqual(refine_opts["model"], "qwen-plus")
+        self.assertEqual(refine_opts["api_key"], "q-key")
+        self.assertEqual(refine_opts["base_url"], "https://dashscope.aliyuncs.com/compatible-mode/v1")
+        self.assertEqual(sql_opts, refine_opts)
     @patch("app.api.execute_query")
     @patch("app.api.generate_sql")
     @patch("app.api.refine_query")
