@@ -28,6 +28,75 @@
 - **Diferencias de compatibilidad de payload**: validar en tests de converter y smoke.
 - **Deriva entre docs y código**: mantener validación de sincronía en scripts de docs.
 
+## Hito 1 — Diseño técnico detallado
+
+### 1) Mapeo de configuración (entorno + request)
+
+| Nivel | Campo/variable | Uso en Mistral | Regla |
+|---|---|---|---|
+| Request (prioridad máxima) | `llm_provider` | selección de proveedor | debe resolver a `mistral` |
+| Request | `llm_model` | modelo runtime | pisa defaults/env |
+| Request | `llm_api_key` | credencial runtime | prioritaria en multi-tenant |
+| Request | `llm_base_url` | endpoint runtime | permite proxy/endpoint dedicado |
+| Entorno por proveedor | `MISTRAL_MODEL` | default de modelo | aplica si no llega `llm_model` |
+| Entorno por proveedor | `MISTRAL_API_KEY` | credencial default | aplica si no llega `llm_api_key` |
+| Entorno por proveedor | `MISTRAL_BASE_URL` | endpoint default | aplica si no llega `llm_base_url` |
+| Entorno global | `LLM_MODEL` / `LLM_API_KEY` / `LLM_BASE_URL` | fallback transversal | último fallback antes de defaults internos |
+
+### 2) Precedencia propuesta (algoritmo canónico)
+
+1. Resolver proveedor desde `llm_provider` o `LLM_PROVIDER`.
+2. Si proveedor = `mistral`, tomar `model/api_key/base_url` desde request `llm_*`.
+3. Completar faltantes con `MISTRAL_*`.
+4. Completar faltantes con `LLM_*` globales.
+5. Si falta `api_key`, retornar error explícito de configuración.
+6. Si falta `base_url`, usar default Mistral (`https://api.mistral.ai/v1`).
+
+### 3) Contrato runtime para `POST /nl2sql/query`
+
+Payload mínimo recomendado:
+
+```json
+{
+  "question": "Top 5 clientes por facturación",
+  "llm_provider": "mistral",
+  "llm_model": "mistral-small-latest"
+}
+```
+
+Payload con override completo:
+
+```json
+{
+  "question": "Top 5 clientes por facturación",
+  "llm_provider": "mistral",
+  "llm_model": "mistral-small-latest",
+  "llm_api_key": "***",
+  "llm_base_url": "https://api.mistral.ai/v1"
+}
+```
+
+### 4) Errores esperados (diseño)
+
+- `provider_not_supported`: proveedor inválido/no normalizable.
+- `missing_api_key`: faltan `llm_api_key`, `MISTRAL_API_KEY` y `LLM_API_KEY`.
+- `invalid_base_url`: URL inválida o esquema no permitido.
+- `provider_http_error`: error HTTP no recuperable del endpoint.
+- `rate_limited`: límites de cuota/rate limit (retryable según status).
+
+> Requisito transversal: no exponer secretos (`api_key`, auth headers) en logs ni respuestas de error.
+
+### 5) Plan de pruebas por capas (hito 1)
+
+- **Unitarias (resolución de config):** matriz request/env-provider/env-global para Mistral.
+- **Unitarias (validación):** API key ausente, base URL inválida, proveedor inválido.
+- **Integración liviana (gateway mock):** `llm_provider=mistral` con respuesta normalizada.
+- **Smoke dry-run:** validar wiring sin llamadas reales.
+
+### 6) Criterio de salida del Hito 1
+
+Hito 1 se cierra cuando precedencia, contrato runtime, errores y plan de pruebas queden documentados para implementación del Hito 2.
+
 ## Modelo mini/equivalente recomendado
 - `mistral-small-latest`
 
