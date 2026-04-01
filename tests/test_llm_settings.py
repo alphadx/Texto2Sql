@@ -70,6 +70,12 @@ class TestLLMSettings(unittest.TestCase):
         self.assertEqual(settings.provider, "anthropic")
         self.assertEqual(settings.model, "claude-3-5-haiku-latest")
 
+    def test_llama_defaults_include_base_url(self):
+        with patch.dict(os.environ, {"LLM_PROVIDER": "llama", "LLAMA_API_KEY": "l-key"}, clear=True):
+            settings = load_llm_startup_settings_from_env()
+        self.assertEqual(settings.model, "meta-llama/Llama-3.1-8B-Instruct")
+        self.assertEqual(settings.base_url, "https://router.huggingface.co/v1")
+
     def test_provider_api_key_precedes_global(self):
         with patch.dict(
             os.environ,

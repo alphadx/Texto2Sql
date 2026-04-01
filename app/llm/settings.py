@@ -31,8 +31,12 @@ _DEFAULT_MODELS = {
     "huggingface": "Qwen/Qwen2.5-3B-Instruct",
     "anthropic": "claude-3-5-haiku-latest",
     "gemini": "gemini-2.0-flash-lite",
-    "llama": "meta-llama/llama-3.1-8b-instruct",
+    "llama": "meta-llama/Llama-3.1-8B-Instruct",
     "copilot": "gpt-4.1-mini",
+}
+
+_DEFAULT_BASE_URLS = {
+    "llama": "https://router.huggingface.co/v1",
 }
 
 
@@ -63,7 +67,10 @@ def load_llm_startup_settings_from_env() -> LLMStartupSettings:
         "LLM_MODEL",
         _read(f"{provider_prefix}_MODEL", _read("OPENAI_MODEL", _DEFAULT_MODELS.get(provider, "gpt-4"))),
     )
-    base_url = _read("LLM_BASE_URL", _read(f"{provider_prefix}_BASE_URL", _read("OPENAI_BASE_URL", "")))
+    base_url = _read(
+        "LLM_BASE_URL",
+        _read(f"{provider_prefix}_BASE_URL", _read("OPENAI_BASE_URL", _DEFAULT_BASE_URLS.get(provider, ""))),
+    )
     api_key = _read(f"{provider_prefix}_API_KEY", _read("LLM_API_KEY", _read("OPENAI_API_KEY", "")))
 
     startup_validate = _read("LLM_STARTUP_VALIDATE", "false").lower() in {"1", "true", "yes"}

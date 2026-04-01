@@ -185,6 +185,30 @@ class TestConverterGatewayIntegration(unittest.TestCase):
         self.assertEqual(fake_gateway.last_config.model, "claude-3-5-haiku-latest")
         self.assertIsNone(fake_gateway.last_config.base_url)
 
+    @patch("app.llm.converter.get_gateway")
+    def test_refine_query_llama_default_wiring(self, mock_get_gateway):
+        fake_gateway = _FakeGateway("ok")
+        mock_get_gateway.return_value = fake_gateway
+        with patch.dict(
+            os.environ,
+            {
+                "LLM_PROVIDER": "llama",
+                "LLAMA_API_KEY": "l-key",
+            },
+            clear=True,
+        ):
+            refined = refine_query(
+                session_id="s8",
+                natural_query="Usuarios activos",
+                schema="TABLE users(id int)",
+                session_manager=self.session_manager,
+                llm_options={"provider": "llama"},
+            )
+        self.assertEqual(refined, "ok")
+        self.assertEqual(fake_gateway.last_config.provider, "llama")
+        self.assertEqual(fake_gateway.last_config.model, "meta-llama/Llama-3.1-8B-Instruct")
+        self.assertEqual(fake_gateway.last_config.base_url, "https://router.huggingface.co/v1")
+
 
 if __name__ == "__main__":
     unittest.main()

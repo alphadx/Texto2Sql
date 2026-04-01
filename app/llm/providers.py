@@ -54,6 +54,7 @@ _DEFAULT_BASE_URLS = {
     "deepseek": "https://api.deepseek.com/v1",
     "mistral": "https://api.mistral.ai/v1",
     "huggingface": "https://router.huggingface.co/v1",
+    "llama": "https://router.huggingface.co/v1",
 }
 
 _DEFAULT_MODELS = {
@@ -63,7 +64,7 @@ _DEFAULT_MODELS = {
     "huggingface": "Qwen/Qwen2.5-3B-Instruct",
     "anthropic": "claude-3-5-haiku-latest",
     "gemini": "gemini-2.0-flash-lite",
-    "llama": "meta-llama/llama-3.1-8b-instruct",
+    "llama": "meta-llama/Llama-3.1-8B-Instruct",
     "copilot": "gpt-4.1-mini",
 }
 

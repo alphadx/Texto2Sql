@@ -94,6 +94,20 @@ Payload con override completo:
 
 Hito 1 se cierra cuando precedencia, contrato runtime, errores y plan de pruebas queden documentados para implementación del Hito 2.
 
+## Hito 2 — Avance de implementación (actual)
+
+Estado actual ya cubierto en código:
+
+- Integración OpenAI-compatible para proveedores hosted de Llama.
+- Default de modelo y base URL por proveedor (`meta-llama/Llama-3.1-8B-Instruct`, `https://router.huggingface.co/v1`).
+- Resolución por precedencia request → `LLAMA_*` → `LLM_*`.
+- Validación de `base_url` y manejo consistente de errores en API/smoke.
+- Evidencia de wiring en converter y endpoint API (`tests/test_llm_converter.py`, `tests/test_app.py`).
+
+Pendiente para cierre completo de Hito 2:
+
+- ✅ Prueba e2e de `POST /nl2sql/query` con `llm_provider=llama` y mocks de pipeline (`tests/test_app.py`).
+
 ## Modelo mini/equivalente recomendado
 - `meta-llama/Llama-3.1-8B-Instruct`
 

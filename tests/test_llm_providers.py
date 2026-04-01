@@ -131,6 +131,19 @@ class TestRuntimeConfigResolution(unittest.TestCase):
             self.assertEqual(cfg.provider, "anthropic")
             self.assertEqual(cfg.model, "claude-3-5-haiku-latest")
 
+    def test_llama_default_model_and_base_url_are_used(self):
+        with patch.dict(
+            os.environ,
+            {
+                "LLM_PROVIDER": "llama",
+                "LLAMA_API_KEY": "l-key",
+            },
+            clear=True,
+        ):
+            cfg = resolve_runtime_config()
+            self.assertEqual(cfg.model, "meta-llama/Llama-3.1-8B-Instruct")
+            self.assertEqual(cfg.base_url, "https://router.huggingface.co/v1")
+
     def test_missing_api_key_raises(self):
         with patch.dict(os.environ, {}, clear=True):
             with self.assertRaises(RuntimeError):
