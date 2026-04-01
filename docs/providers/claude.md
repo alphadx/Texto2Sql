@@ -1,5 +1,33 @@
 # Anthropic Claude
 
+## Estado de implementación (Hito 0: alineación)
+
+### Decisión inicial de integración
+- Claude se integra mediante **gateway nativo Anthropic** (`/v1/messages`) ya existente en el backend.
+- Se soporta override de `base_url` por request/env para entornos proxy o compliance empresarial.
+
+### Alcance del primer release (no-GA)
+- Flujo NL→SQL con `llm_provider=claude`/`anthropic`.
+- Compatibilidad con flujo de 2 agentes (refine + sql) sobre contrato de mensajes Anthropic.
+- Resolución de configuración por precedencia: request → env por proveedor → env global.
+
+### Fuera de alcance en esta fase
+- Tool use avanzado de Anthropic.
+- Routing dinámico entre familias de modelos Claude.
+- Estrategias multi-región activas con failover automático.
+
+### Criterios de aceptación (Definition of Done)
+1. Variables documentadas y validadas: `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`, `ANTHROPIC_BASE_URL`.
+2. Soporte explícito de alias (`claude` → `anthropic`) sin inconsistencias startup/runtime.
+3. Ejemplo funcional en `POST /nl2sql/query` con `llm_provider=claude` y overrides `llm_*`.
+4. Pruebas de wiring de gateway nativo + precedencia de configuración.
+5. Smoke `--dry-run` con salida verificable y errores estructurados.
+
+### Riesgos y mitigaciones iniciales
+- **Diferencias de formato mensajes**: mantener adaptación `system`/`messages` en gateway Anthropic.
+- **Límites/cuotas**: reutilizar retry/backoff/circuit breaker global.
+- **Evolución de API**: encapsular cambios en gateway nativo para no romper contrato NL→SQL.
+
 ## Modelo mini/equivalente recomendado
 - `claude-3-5-haiku-latest`
 

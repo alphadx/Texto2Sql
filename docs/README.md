@@ -84,7 +84,7 @@ Se deja explícito el backlog para ampliar proveedores/modelos más allá de Ope
 - [x] **Hugging Face Inference**: integración v1 completada (serverless + dedicated endpoint en modo OpenAI-compatible; evolución futura a capacidades nativas según necesidad).
 - [x] **Gemini (Google)**: integración v1 completada (gateway nativo `generateContent`, mapeo de prompts y soporte por request/env).
 - [x] **Mistral**: integración v1 completada (OpenAI-compatible `chat/completions` con soporte por request/env y validación de configuración).
-- [ ] **Claude (Anthropic)**: cliente dedicado, manejo de mensajes y compatibilidad con el flujo de 2 agentes.
+- [ ] **Claude (Anthropic)**: cliente dedicado, manejo de mensajes y compatibilidad con el flujo de 2 agentes. *(Hito 0 de alineación documentado en `docs/providers/claude.md`.)*
 - [ ] **Llama** (proveedores comerciales/hosted): definir variantes soportadas y endpoint objetivo.
 - [ ] **Copilot** (escenario enterprise): evaluar alcance técnico real para uso como backend programático.
 
