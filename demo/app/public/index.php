@@ -12,6 +12,9 @@
     .user { background: #374151; }
     .bot { background: #0f766e; }
     .meta { font-size: 12px; opacity: 0.8; margin-top: 4px; }
+    .result-block { margin-top: 8px; padding: 8px; border-radius: 8px; background: #0b1220; }
+    .result-title { font-size: 12px; text-transform: uppercase; letter-spacing: .03em; opacity: 0.85; margin-bottom: 4px; }
+    .result-body { white-space: pre-wrap; word-break: break-word; }
     .cfg { background: #0b1220; border-radius: 10px; padding: 12px; margin-bottom: 12px; }
     .cfg-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
     .cfg input, .cfg select { width: 100%; box-sizing: border-box; }
@@ -87,7 +90,10 @@
   <div id="chat" class="chat"></div>
   <form id="chatForm">
     <input id="message" name="message" placeholder="Ej: Top 5 películas por arriendo" required />
-    <button id="sendBtn" type="submit">Enviar</button>
+    <div style="display:flex; gap:8px;">
+      <button id="clearSessionBtn" type="button">Limpiar sesión LLM</button>
+      <button id="sendBtn" type="submit">Enviar</button>
+    </div>
   </form>
   <div id="status" class="status"></div>
 </div>
@@ -236,6 +242,54 @@ function tableHTML(result) {
   return `<table><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table>`;
 }
 
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function renderAssistantOutput(result, fallbackText) {
+  if (!result) {
+    return `<div class="result-body">${escapeHtml(fallbackText || '')}</div>`;
+  }
+
+  const formalText = (result.texto_formal || '').trim();
+  const sqlText = (result.sql_generado || '').trim();
+  const blocks = [];
+
+  if (formalText) {
+    blocks.push(`
+      <div class="result-block">
+        <div class="result-title">Texto formal</div>
+        <div class="result-body">${escapeHtml(formalText)}</div>
+      </div>
+    `);
+  }
+
+  if (sqlText) {
+    blocks.push(`
+      <div class="result-block">
+        <div class="result-title">SQL generado</div>
+        <div class="result-body">${escapeHtml(sqlText)}</div>
+      </div>
+    `);
+  }
+
+  if (!blocks.length) {
+    blocks.push(`
+      <div class="result-block">
+        <div class="result-title">Respuesta</div>
+        <div class="result-body">${escapeHtml(fallbackText || '')}</div>
+      </div>
+    `);
+  }
+
+  return blocks.join('');
+}
+
 function renderHistory(history) {
   const chat = document.getElementById('chat');
   chat.innerHTML = '';
@@ -243,7 +297,14 @@ function renderHistory(history) {
     const div = document.createElement('div');
     div.className = `msg ${item.role === 'user' ? 'user' : 'bot'}`;
     const ts = new Date((item.ts || 0) * 1000).toLocaleString();
-    div.innerHTML = `<div>${item.text || ''}</div><div class="meta">${ts}</div>`;
+    if (item.role === 'assistant') {
+      div.innerHTML = `
+        ${renderAssistantOutput(item.result, item.text)}
+        <div class="meta">${ts}</div>
+      `;
+    } else {
+      div.innerHTML = `<div>${escapeHtml(item.text || '')}</div><div class="meta">${ts}</div>`;
+    }
 
     if (item.role === 'assistant' && item.result) {
       const resultWrap = document.createElement('div');
@@ -311,7 +372,16 @@ function maybeRotateSession(params) {
 
 function setBusy(isBusy, text='') {
   document.getElementById('sendBtn').disabled = isBusy;
+  document.getElementById('clearSessionBtn').disabled = isBusy;
   document.getElementById('status').textContent = text;
+}
+
+function clearSession(showInfo = true) {
+  sessionId = newSessionId();
+  localStorage.setItem('demoSession', sessionId);
+  if (showInfo) {
+    showAlert('Sesión LLM limpiada: se inició una sesión nueva.', 'info');
+  }
 }
 
 async function fetchHistory() {
@@ -324,6 +394,15 @@ async function fetchHistory() {
 
 document.getElementById('llm_provider').addEventListener('change', applyProviderHints);
 document.getElementById('db_engine').addEventListener('change', applyDbHints);
+document.getElementById('clearSessionBtn').addEventListener('click', async () => {
+  clearSession(true);
+  setBusy(true, 'Limpiando sesión...');
+  try {
+    await fetchHistory();
+  } finally {
+    setBusy(false);
+  }
+});
 
 document.getElementById('chatForm').addEventListener('submit', async (e) => {
   e.preventDefault();
