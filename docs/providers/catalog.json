@@ -1,6 +1,13 @@
 {
   "schema_version": 1,
-  "languages": ["php_8_3", "nodejs_lts", "python_stable", "cpp_libcurl", "csharp_dotnet", "java_jdk"],
+  "languages": [
+    "php_8_3",
+    "nodejs_lts",
+    "python_stable",
+    "cpp_libcurl",
+    "csharp_dotnet",
+    "java_jdk"
+  ],
   "providers": [
     {
       "id": "openai",
@@ -49,6 +56,22 @@
       "env_api_key": "ANTHROPIC_API_KEY",
       "base_url": "https://api.anthropic.com/v1/messages",
       "doc": "docs/providers/claude.md"
+    },
+    {
+      "id": "qwen",
+      "company": "Alibaba Cloud",
+      "mini_model": "qwen-plus",
+      "env_api_key": "QWEN_API_KEY",
+      "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
+      "doc": "docs/providers/qwen.md"
+    },
+    {
+      "id": "kimi",
+      "company": "Moonshot AI",
+      "mini_model": "kimi-k2",
+      "env_api_key": "KIMI_API_KEY",
+      "base_url": "https://api.moonshot.cn/v1/chat/completions",
+      "doc": "docs/providers/kimi.md"
     },
     {
       "id": "llama",

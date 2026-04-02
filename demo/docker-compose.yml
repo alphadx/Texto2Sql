@@ -24,6 +24,12 @@ services:
       - demo_cache:/var/cache/texto2sql-demo
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -P 3306 --silent"]
+      interval: 2s
+      timeout: 3s
+      retries: 60
+      start_period: 30s
 
 volumes:
   demo_mysql_data:
