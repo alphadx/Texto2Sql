@@ -16,8 +16,13 @@ class TestLLMSmokeScript(unittest.TestCase):
         self.assertEqual(exit_code, 0)
 
     def test_invalid_provider_returns_error(self):
-        with self.assertRaises(ValueError):
-            run(["--provider", "bad-provider", "--dry-run", "--api-key", "x"])
+        exit_code = run(["--provider", "bad-provider", "--dry-run", "--api-key", "x"])
+        self.assertEqual(exit_code, 2)
+
+    def test_invalid_base_url_returns_error(self):
+        with patch.dict(os.environ, {"DEEPSEEK_API_KEY": "fake"}, clear=False):
+            exit_code = run(["--provider", "deepseek", "--dry-run", "--base-url", "bad-url"])
+        self.assertEqual(exit_code, 2)
 
 
 if __name__ == "__main__":

@@ -76,15 +76,17 @@ Si se agrega soporte nativo para otros proveedores comerciales (Anthropic, Gemin
 
 ## 8) TODO de implementación (pendiente)
 
-Se acuerda dejar explícito el backlog para ampliar proveedores/modelos más allá de OpenAI-compatible:
+Se deja explícito el backlog para ampliar proveedores/modelos más allá de OpenAI-compatible.
 
-- [ ] **DeepSeek**: definir cliente oficial o compatibilidad OpenAI, variables de entorno y catálogo de modelos.
-- [ ] **Hugging Face Inference**: definir integración (serverless/dedicated endpoint), autenticación y límites.
-- [ ] **Gemini (Google)**: agregar cliente/API, mapeo de modelos y estrategia de prompts equivalente.
-- [ ] **Mistral**: soporte de SDK/endpoint y configuración por entorno + request.
-- [ ] **Claude (Anthropic)**: cliente dedicado, manejo de mensajes y compatibilidad con el flujo de 2 agentes.
-- [ ] **Llama** (proveedores comerciales/hosted): definir variantes soportadas y endpoint objetivo.
-- [ ] **Copilot** (escenario enterprise): evaluar alcance técnico real para uso como backend programático.
+> Alcance actual: este backlog documenta trabajo pendiente de producto/arquitectura; no implica soporte GA hasta cerrar criterios mínimos por proveedor.
+
+- [x] **DeepSeek**: integración inicial por compatibilidad OpenAI completada (pendiente evolución a cliente nativo solo si aparece brecha funcional).
+- [x] **Hugging Face Inference**: integración v1 completada (serverless + dedicated endpoint en modo OpenAI-compatible; evolución futura a capacidades nativas según necesidad).
+- [x] **Gemini (Google)**: integración v1 completada (gateway nativo `generateContent`, mapeo de prompts y soporte por request/env).
+- [x] **Mistral**: integración v1 completada (OpenAI-compatible `chat/completions` con soporte por request/env y validación de configuración).
+- [x] **Claude (Anthropic)**: integración v1 completada (gateway nativo `messages`, alias `claude` y soporte por request/env con validación de configuración).
+- [x] **Llama** (proveedores comerciales/hosted): integración v1 completada (OpenAI-compatible hosted con soporte por request/env y validación de configuración).
+- [x] **Copilot** (escenario enterprise): integración v1 completada (OpenAI-compatible con enfoque enterprise, soporte request/env y validación de configuración).
 
 ### Criterios mínimos para cerrar cada TODO
 
@@ -207,3 +209,13 @@ Para cambios que impacten el demo (contrato API, UX o smokes), usar:
 - Plantilla PR con sección obligatoria **Impacto en DEMO**: `.github/pull_request_template.md`
 
 Esto permite declarar releases como **Demo Compatible** con evidencia verificable.
+
+## 19) Iniciativa nueva: skill de onboarding + Qwen/Kimi
+
+Se añadió roadmap de **Hito 0 (alineación)** para:
+
+- crear una skill reusable de onboarding de nuevos proveedores LLM,
+- integrar Qwen,
+- e integrar Kimi.
+
+Documento: `docs/providers/provider-onboarding-skill-roadmap.md`.

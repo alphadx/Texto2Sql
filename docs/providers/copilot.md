@@ -1,5 +1,113 @@
 # GitHub
 
+## Estado de implementación (Hito 0: alineación)
+
+### Decisión inicial de integración
+- Copilot se considera en fase de **evaluación enterprise** con enfoque OpenAI-compatible donde aplique.
+- La integración v1 se limita a backend programático explícitamente soportado por credenciales/tenant corporativo.
+
+### Alcance del primer release (no-GA)
+- Validar viabilidad técnica real de uso como backend NL→SQL.
+- Definir configuración mínima por entorno (`api_key`, `model`, `base_url`) y contrato por request.
+- Confirmar restricciones de seguridad/compliance para uso server-to-server.
+
+### Fuera de alcance en esta fase
+- Integración acoplada a UX de IDE/cliente Copilot.
+- Supuestos de disponibilidad universal sin validación de tenant/licencia.
+- Soporte contractual multi-org sin validación previa de permisos.
+
+### Criterios de aceptación (Definition of Done)
+1. Alcance técnico enterprise claramente delimitado (qué sí/qué no soporta backend).
+2. Variables documentadas y validadas: `COPILOT_API_KEY`, `COPILOT_MODEL`, `COPILOT_BASE_URL`.
+3. Ejemplo funcional en `POST /nl2sql/query` con `llm_provider=copilot`.
+4. Pruebas de wiring/configuración y manejo de errores de autenticación/autorización.
+5. Smoke `--dry-run` y checklist de precondiciones enterprise.
+
+### Riesgos y mitigaciones iniciales
+- **Ambigüedad de soporte programático**: validar fuentes oficiales + pruebas controladas por tenant.
+- **Restricciones de seguridad/licenciamiento**: documentar prerequisitos antes de habilitar producción.
+- **Dependencia de endpoint/credencial específica**: aislar configuración por entorno.
+
+## Hito 1 — Diseño técnico detallado
+
+### 1) Mapeo de configuración (entorno + request)
+
+| Nivel | Campo/variable | Uso en Copilot enterprise | Regla |
+|---|---|---|---|
+| Request (prioridad máxima) | `llm_provider` | selección de proveedor | debe resolver a `copilot` |
+| Request | `llm_model` | modelo runtime | pisa defaults/env |
+| Request | `llm_api_key` | credencial runtime | prioritaria en multi-tenant/tenant-aware |
+| Request | `llm_base_url` | endpoint runtime | define endpoint enterprise habilitado |
+| Entorno por proveedor | `COPILOT_MODEL` | default de modelo | aplica si no llega `llm_model` |
+| Entorno por proveedor | `COPILOT_API_KEY` | credencial default | aplica si no llega `llm_api_key` |
+| Entorno por proveedor | `COPILOT_BASE_URL` | endpoint default | aplica si no llega `llm_base_url` |
+| Entorno global | `LLM_MODEL` / `LLM_API_KEY` / `LLM_BASE_URL` | fallback transversal | último fallback antes de defaults internos |
+
+### 2) Precedencia propuesta (algoritmo canónico)
+
+1. Resolver proveedor desde `llm_provider` o `LLM_PROVIDER`.
+2. Si proveedor = `copilot`, tomar `model/api_key/base_url` desde request `llm_*`.
+3. Completar faltantes con `COPILOT_*`.
+4. Completar faltantes con `LLM_*`.
+5. Si falta `api_key`, retornar error explícito de configuración.
+6. Si falta `base_url`, usar default enterprise configurado en catálogo (`https://models.inference.ai.azure.com`).
+
+### 3) Contrato runtime para `POST /nl2sql/query`
+
+Payload mínimo recomendado:
+
+```json
+{
+  "question": "Top 5 clientes por facturación",
+  "llm_provider": "copilot",
+  "llm_model": "gpt-4.1-mini"
+}
+```
+
+Payload con override completo:
+
+```json
+{
+  "question": "Top 5 clientes por facturación",
+  "llm_provider": "copilot",
+  "llm_model": "gpt-4.1-mini",
+  "llm_api_key": "***",
+  "llm_base_url": "https://models.inference.ai.azure.com"
+}
+```
+
+### 4) Errores esperados (diseño)
+
+- `provider_not_supported`: proveedor inválido/no normalizable.
+- `missing_api_key`: faltan `llm_api_key`, `COPILOT_API_KEY` y `LLM_API_KEY`.
+- `invalid_base_url`: URL inválida o endpoint no permitido por política enterprise.
+- `provider_http_error`: error HTTP no recuperable del endpoint configurado.
+- `authz_error`: credencial válida pero sin permisos/tenant habilitado.
+
+### 5) Plan de pruebas por capas (hito 1)
+
+- **Unitarias:** precedencia request/env-provider/env-global y validación de base URL.
+- **Integración liviana:** wiring OpenAI-compatible para `copilot`.
+- **Smoke dry-run:** validación de configuración sin llamada real (incluyendo check de precondiciones enterprise).
+
+### 6) Criterio de salida del Hito 1
+
+Hito 1 se cierra cuando precedencia, contrato runtime, errores y plan de pruebas queden documentados para implementación del Hito 2.
+
+## Hito 2 — Avance de implementación (actual)
+
+Estado actual ya cubierto en código:
+
+- Integración OpenAI-compatible para escenario Copilot enterprise.
+- Default de modelo y base URL por proveedor (`gpt-4.1-mini`, `https://models.inference.ai.azure.com`).
+- Resolución de configuración por precedencia request → `COPILOT_*` → `LLM_*`.
+- Validación de `base_url` y manejo consistente de errores en API/smoke.
+- Evidencia de wiring en converter y endpoint API (`tests/test_llm_converter.py`, `tests/test_app.py`).
+
+Pendiente para cierre completo de Hito 2:
+
+- ✅ Prueba e2e de `POST /nl2sql/query` con `llm_provider=copilot` y mocks de pipeline (`tests/test_app.py`).
+
 ## Modelo mini/equivalente recomendado
 - `gpt-4.1-mini`
 

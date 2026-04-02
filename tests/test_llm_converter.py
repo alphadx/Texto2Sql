@@ -14,8 +14,10 @@ from app.llm.session_manager import InMemorySessionManager
 class _FakeGateway:
     def __init__(self, text: str):
         self._text = text
+        self.last_config = None
 
     def complete(self, config, messages):
+        self.last_config = config
         return LLMCompletionResult(
             text=self._text,
             provider=config.provider,
@@ -66,6 +68,170 @@ class TestConverterGatewayIntegration(unittest.TestCase):
         )
 
         self.assertEqual(sql, "SELECT 1")
+
+    @patch("app.llm.converter.get_gateway")
+    def test_refine_query_huggingface_serverless_default_wiring(self, mock_get_gateway):
+        fake_gateway = _FakeGateway("ok")
+        mock_get_gateway.return_value = fake_gateway
+        with patch.dict(
+            os.environ,
+            {
+                "LLM_PROVIDER": "huggingface",
+                "HUGGINGFACE_API_KEY": "hf-key",
+            },
+            clear=True,
+        ):
+            refined = refine_query(
+                session_id="s3",
+                natural_query="Usuarios activos",
+                schema="TABLE users(id int)",
+                session_manager=self.session_manager,
+                llm_options={"provider": "huggingface"},
+            )
+        self.assertEqual(refined, "ok")
+        self.assertEqual(fake_gateway.last_config.provider, "huggingface")
+        self.assertEqual(fake_gateway.last_config.model, "Qwen/Qwen2.5-3B-Instruct")
+        self.assertEqual(fake_gateway.last_config.base_url, "https://router.huggingface.co/v1")
+
+    @patch("app.llm.converter.get_gateway")
+    def test_refine_query_huggingface_dedicated_endpoint_wiring(self, mock_get_gateway):
+        fake_gateway = _FakeGateway("ok")
+        mock_get_gateway.return_value = fake_gateway
+        with patch.dict(os.environ, {"HUGGINGFACE_API_KEY": "hf-key"}, clear=True):
+            refined = refine_query(
+                session_id="s4",
+                natural_query="Usuarios activos",
+                schema="TABLE users(id int)",
+                session_manager=self.session_manager,
+                llm_options={
+                    "provider": "huggingface",
+                    "base_url": "https://dedicated.hf.endpoint/v1",
+                    "model": "Qwen/Qwen2.5-3B-Instruct",
+                },
+            )
+        self.assertEqual(refined, "ok")
+        self.assertEqual(fake_gateway.last_config.provider, "huggingface")
+        self.assertEqual(fake_gateway.last_config.base_url, "https://dedicated.hf.endpoint/v1")
+
+    @patch("app.llm.converter.get_gateway")
+    def test_refine_query_gemini_default_wiring(self, mock_get_gateway):
+        fake_gateway = _FakeGateway("ok")
+        mock_get_gateway.return_value = fake_gateway
+        with patch.dict(
+            os.environ,
+            {
+                "LLM_PROVIDER": "gemini",
+                "GEMINI_API_KEY": "g-key",
+            },
+            clear=True,
+        ):
+            refined = refine_query(
+                session_id="s5",
+                natural_query="Usuarios activos",
+                schema="TABLE users(id int)",
+                session_manager=self.session_manager,
+                llm_options={"provider": "gemini"},
+            )
+        self.assertEqual(refined, "ok")
+        self.assertEqual(fake_gateway.last_config.provider, "gemini")
+        self.assertEqual(fake_gateway.last_config.model, "gemini-2.0-flash-lite")
+        self.assertIsNone(fake_gateway.last_config.base_url)
+
+    @patch("app.llm.converter.get_gateway")
+    def test_refine_query_mistral_default_wiring(self, mock_get_gateway):
+        fake_gateway = _FakeGateway("ok")
+        mock_get_gateway.return_value = fake_gateway
+        with patch.dict(
+            os.environ,
+            {
+                "LLM_PROVIDER": "mistral",
+                "MISTRAL_API_KEY": "m-key",
+            },
+            clear=True,
+        ):
+            refined = refine_query(
+                session_id="s6",
+                natural_query="Usuarios activos",
+                schema="TABLE users(id int)",
+                session_manager=self.session_manager,
+                llm_options={"provider": "mistral"},
+            )
+        self.assertEqual(refined, "ok")
+        self.assertEqual(fake_gateway.last_config.provider, "mistral")
+        self.assertEqual(fake_gateway.last_config.model, "mistral-small-latest")
+        self.assertEqual(fake_gateway.last_config.base_url, "https://api.mistral.ai/v1")
+
+    @patch("app.llm.converter.get_gateway")
+    def test_refine_query_claude_alias_wiring(self, mock_get_gateway):
+        fake_gateway = _FakeGateway("ok")
+        mock_get_gateway.return_value = fake_gateway
+        with patch.dict(
+            os.environ,
+            {
+                "LLM_PROVIDER": "claude",
+                "ANTHROPIC_API_KEY": "a-key",
+            },
+            clear=True,
+        ):
+            refined = refine_query(
+                session_id="s7",
+                natural_query="Usuarios activos",
+                schema="TABLE users(id int)",
+                session_manager=self.session_manager,
+                llm_options={"provider": "claude"},
+            )
+        self.assertEqual(refined, "ok")
+        self.assertEqual(fake_gateway.last_config.provider, "anthropic")
+        self.assertEqual(fake_gateway.last_config.model, "claude-3-5-haiku-latest")
+        self.assertIsNone(fake_gateway.last_config.base_url)
+
+    @patch("app.llm.converter.get_gateway")
+    def test_refine_query_llama_default_wiring(self, mock_get_gateway):
+        fake_gateway = _FakeGateway("ok")
+        mock_get_gateway.return_value = fake_gateway
+        with patch.dict(
+            os.environ,
+            {
+                "LLM_PROVIDER": "llama",
+                "LLAMA_API_KEY": "l-key",
+            },
+            clear=True,
+        ):
+            refined = refine_query(
+                session_id="s8",
+                natural_query="Usuarios activos",
+                schema="TABLE users(id int)",
+                session_manager=self.session_manager,
+                llm_options={"provider": "llama"},
+            )
+        self.assertEqual(refined, "ok")
+        self.assertEqual(fake_gateway.last_config.provider, "llama")
+        self.assertEqual(fake_gateway.last_config.model, "meta-llama/Llama-3.1-8B-Instruct")
+        self.assertEqual(fake_gateway.last_config.base_url, "https://router.huggingface.co/v1")
+
+    @patch("app.llm.converter.get_gateway")
+    def test_refine_query_copilot_default_wiring(self, mock_get_gateway):
+        fake_gateway = _FakeGateway("ok")
+        mock_get_gateway.return_value = fake_gateway
+        with patch.dict(
+            os.environ,
+            {
+                "LLM_PROVIDER": "copilot",
+                "COPILOT_API_KEY": "c-key",
+            },
+            clear=True,
+        ):
+            refined = refine_query(
+                session_id="s9",
+                natural_query="Usuarios activos",
+                schema="TABLE users(id int)",
+                session_manager=self.session_manager,
+                llm_options={"provider": "copilot"},
+            )
+        self.assertEqual(refined, "ok")
+        self.assertEqual(fake_gateway.last_config.provider, "copilot")
+        self.assertEqual(fake_gateway.last_config.model, "gpt-4.1-mini")
+        self.assertEqual(fake_gateway.last_config.base_url, "https://models.inference.ai.azure.com")
 
 
 if __name__ == "__main__":
