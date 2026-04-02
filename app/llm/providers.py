@@ -36,6 +36,20 @@ _PROVIDER_ALIASES = {
     "kimi": "kimi",
     "llama": "llama",
     "copilot": "copilot",
+    "xinghuo": "xinghuo",
+    "spark": "xinghuo",
+    "iflytek": "xinghuo",
+    "doubao": "doubao",
+    "bytedance": "doubao",
+    "zhipu": "zhipu",
+    "glm": "zhipu",
+    "minimax": "minimax",
+    "mini-max": "minimax",
+    "pangu": "pangu",
+    "huawei": "pangu",
+    "huaweicloud": "pangu",
+    "grok": "grok",
+    "xai": "grok",
 }
 
 _SUPPORTED_PROVIDERS = set(_PROVIDER_ALIASES.values())
@@ -51,6 +65,12 @@ _PROVIDER_ENV_PREFIX = {
     "kimi": "KIMI",
     "llama": "LLAMA",
     "copilot": "COPILOT",
+    "xinghuo": "XINGHUO",
+    "doubao": "DOUBAO",
+    "zhipu": "ZHIPU",
+    "minimax": "MINIMAX",
+    "pangu": "PANGU",
+    "grok": "GROK",
 }
 
 _DEFAULT_BASE_URLS = {
@@ -62,6 +82,12 @@ _DEFAULT_BASE_URLS = {
     "kimi": "https://api.moonshot.cn/v1",
     "llama": "https://router.huggingface.co/v1",
     "copilot": "https://models.inference.ai.azure.com",
+    "xinghuo": "https://spark-api-open.xf-yun.com/v1",
+    "doubao": "https://ark.cn-beijing.volces.com/api/v3",
+    "zhipu": "https://open.bigmodel.cn/api/paas/v4",
+    "minimax": "https://api.minimax.chat/v1",
+    "pangu": "https://modelarts.cn-north-4.myhuaweicloud.com/v1",
+    "grok": "https://api.x.ai/v1",
 }
 
 _DEFAULT_MODELS = {
@@ -75,6 +101,12 @@ _DEFAULT_MODELS = {
     "kimi": "kimi-k2",
     "llama": "meta-llama/Llama-3.1-8B-Instruct",
     "copilot": "gpt-4.1-mini",
+    "xinghuo": "generalv3.5",
+    "doubao": "doubao-pro-32k",
+    "zhipu": "glm-4-flash",
+    "minimax": "MiniMax-Text-01",
+    "pangu": "pangu-pro",
+    "grok": "grok-2-latest",
 }
 
 

@@ -218,11 +218,40 @@ Se añadió roadmap de **Hito 0 (alineación)** para:
 - integrar Qwen,
 - e integrar Kimi.
 
-Documento: `docs/tarea/integración_llm_varios/provider-onboarding-skill-roadmap.md`.
+Documento: `docs/tarea/otros_modelos_llm/provider-onboarding-skill-roadmap.md`.
 
 Estado actual de la iniciativa:
 
 - [x] Qwen: integración v1 completada (OpenAI-compatible hosted con soporte request/env y validación).
 - [x] Kimi: integración v1 completada (OpenAI-compatible hosted con soporte request/env y validación).
 
-Estado de verificación consolidado: `docs/tarea/integración_llm_varios/README.md`.
+Estado de verificación consolidado: `docs/tarea/otros_modelos_llm/README.md`.
+
+
+## 20) Iniciativa nueva: Xinghuo + Doubao + Zhipu + MiniMax + Pangu + Grok
+
+Se añadió el **Hito 0 (análisis y definición de hitos)** para una nueva ola de integración multi-proveedor:
+
+- Xinghuo
+- Doubao
+- Zhipu
+- MiniMax
+- Pangu
+- Grok
+
+Documento base: `docs/tarea/otros_modelos_llm/hito0-roadmap-xinghuo-doubao-zhipu-minimax-pangu-grok.md`.
+
+Estado inicial:
+
+- [x] Hito 1 — Diseño técnico transversal
+  - Documento: `docs/tarea/otros_modelos_llm/hito1-diseno-tecnico-transversal.md`
+- [x] Hito 2 — Xinghuo
+  - Documento: `docs/tarea/otros_modelos_llm/hito2-xinghuo-implementacion.md`
+- [x] Hito 3 — Doubao
+  - Documento: `docs/tarea/otros_modelos_llm/hito3-doubao-implementacion.md`
+- [x] Hito 4 — Zhipu + MiniMax
+  - Documento: `docs/tarea/otros_modelos_llm/hito4-zhipu-minimax-implementacion.md`
+- [x] Hito 5 — Pangu + Grok
+  - Documento: `docs/tarea/otros_modelos_llm/hito5-pangu-grok-implementacion.md`
+- [x] Hito 6 — Cierre y consolidación
+  - Documento: `docs/tarea/otros_modelos_llm/hito6-cierre-consolidacion.md`

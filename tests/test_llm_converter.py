@@ -257,6 +257,150 @@ class TestConverterGatewayIntegration(unittest.TestCase):
         self.assertEqual(fake_gateway.last_config.model, "qwen-plus")
         self.assertEqual(fake_gateway.last_config.base_url, "https://dashscope.aliyuncs.com/compatible-mode/v1")
 
+    @patch("app.llm.converter.get_gateway")
+    def test_refine_query_xinghuo_default_wiring(self, mock_get_gateway):
+        fake_gateway = _FakeGateway("ok")
+        mock_get_gateway.return_value = fake_gateway
+        with patch.dict(
+            os.environ,
+            {
+                "LLM_PROVIDER": "xinghuo",
+                "XINGHUO_API_KEY": "x-key",
+            },
+            clear=True,
+        ):
+            refined = refine_query(
+                session_id="s11",
+                natural_query="Usuarios activos",
+                schema="TABLE users(id int)",
+                session_manager=self.session_manager,
+                llm_options={"provider": "xinghuo"},
+            )
+        self.assertEqual(refined, "ok")
+        self.assertEqual(fake_gateway.last_config.provider, "xinghuo")
+        self.assertEqual(fake_gateway.last_config.model, "generalv3.5")
+        self.assertEqual(fake_gateway.last_config.base_url, "https://spark-api-open.xf-yun.com/v1")
+
+    @patch("app.llm.converter.get_gateway")
+    def test_refine_query_doubao_default_wiring(self, mock_get_gateway):
+        fake_gateway = _FakeGateway("ok")
+        mock_get_gateway.return_value = fake_gateway
+        with patch.dict(
+            os.environ,
+            {
+                "LLM_PROVIDER": "doubao",
+                "DOUBAO_API_KEY": "d-key",
+            },
+            clear=True,
+        ):
+            refined = refine_query(
+                session_id="s12",
+                natural_query="Usuarios activos",
+                schema="TABLE users(id int)",
+                session_manager=self.session_manager,
+                llm_options={"provider": "doubao"},
+            )
+        self.assertEqual(refined, "ok")
+        self.assertEqual(fake_gateway.last_config.provider, "doubao")
+        self.assertEqual(fake_gateway.last_config.model, "doubao-pro-32k")
+        self.assertEqual(fake_gateway.last_config.base_url, "https://ark.cn-beijing.volces.com/api/v3")
+
+    @patch("app.llm.converter.get_gateway")
+    def test_refine_query_zhipu_default_wiring(self, mock_get_gateway):
+        fake_gateway = _FakeGateway("ok")
+        mock_get_gateway.return_value = fake_gateway
+        with patch.dict(
+            os.environ,
+            {
+                "LLM_PROVIDER": "zhipu",
+                "ZHIPU_API_KEY": "z-key",
+            },
+            clear=True,
+        ):
+            refined = refine_query(
+                session_id="s13",
+                natural_query="Usuarios activos",
+                schema="TABLE users(id int)",
+                session_manager=self.session_manager,
+                llm_options={"provider": "zhipu"},
+            )
+        self.assertEqual(refined, "ok")
+        self.assertEqual(fake_gateway.last_config.provider, "zhipu")
+        self.assertEqual(fake_gateway.last_config.model, "glm-4-flash")
+        self.assertEqual(fake_gateway.last_config.base_url, "https://open.bigmodel.cn/api/paas/v4")
+
+    @patch("app.llm.converter.get_gateway")
+    def test_refine_query_minimax_default_wiring(self, mock_get_gateway):
+        fake_gateway = _FakeGateway("ok")
+        mock_get_gateway.return_value = fake_gateway
+        with patch.dict(
+            os.environ,
+            {
+                "LLM_PROVIDER": "minimax",
+                "MINIMAX_API_KEY": "m-key",
+            },
+            clear=True,
+        ):
+            refined = refine_query(
+                session_id="s14",
+                natural_query="Usuarios activos",
+                schema="TABLE users(id int)",
+                session_manager=self.session_manager,
+                llm_options={"provider": "minimax"},
+            )
+        self.assertEqual(refined, "ok")
+        self.assertEqual(fake_gateway.last_config.provider, "minimax")
+        self.assertEqual(fake_gateway.last_config.model, "MiniMax-Text-01")
+        self.assertEqual(fake_gateway.last_config.base_url, "https://api.minimax.chat/v1")
+
+    @patch("app.llm.converter.get_gateway")
+    def test_refine_query_pangu_default_wiring(self, mock_get_gateway):
+        fake_gateway = _FakeGateway("ok")
+        mock_get_gateway.return_value = fake_gateway
+        with patch.dict(
+            os.environ,
+            {
+                "LLM_PROVIDER": "pangu",
+                "PANGU_API_KEY": "p-key",
+            },
+            clear=True,
+        ):
+            refined = refine_query(
+                session_id="s15",
+                natural_query="Usuarios activos",
+                schema="TABLE users(id int)",
+                session_manager=self.session_manager,
+                llm_options={"provider": "pangu"},
+            )
+        self.assertEqual(refined, "ok")
+        self.assertEqual(fake_gateway.last_config.provider, "pangu")
+        self.assertEqual(fake_gateway.last_config.model, "pangu-pro")
+        self.assertEqual(fake_gateway.last_config.base_url, "https://modelarts.cn-north-4.myhuaweicloud.com/v1")
+
+    @patch("app.llm.converter.get_gateway")
+    def test_refine_query_grok_default_wiring(self, mock_get_gateway):
+        fake_gateway = _FakeGateway("ok")
+        mock_get_gateway.return_value = fake_gateway
+        with patch.dict(
+            os.environ,
+            {
+                "LLM_PROVIDER": "grok",
+                "GROK_API_KEY": "g-key",
+            },
+            clear=True,
+        ):
+            refined = refine_query(
+                session_id="s16",
+                natural_query="Usuarios activos",
+                schema="TABLE users(id int)",
+                session_manager=self.session_manager,
+                llm_options={"provider": "grok"},
+            )
+        self.assertEqual(refined, "ok")
+        self.assertEqual(fake_gateway.last_config.provider, "grok")
+        self.assertEqual(fake_gateway.last_config.model, "grok-2-latest")
+        self.assertEqual(fake_gateway.last_config.base_url, "https://api.x.ai/v1")
+
 
 if __name__ == "__main__":
     unittest.main()

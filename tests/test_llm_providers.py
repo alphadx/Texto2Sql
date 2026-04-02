@@ -23,6 +23,12 @@ class TestProviderNormalization(unittest.TestCase):
         self.assertEqual(normalize_provider("claude"), "anthropic")
         self.assertEqual(normalize_provider("google"), "gemini")
         self.assertEqual(normalize_provider("hf"), "huggingface")
+        self.assertEqual(normalize_provider("spark"), "xinghuo")
+        self.assertEqual(normalize_provider("bytedance"), "doubao")
+        self.assertEqual(normalize_provider("glm"), "zhipu")
+        self.assertEqual(normalize_provider("mini-max"), "minimax")
+        self.assertEqual(normalize_provider("huawei"), "pangu")
+        self.assertEqual(normalize_provider("xai"), "grok")
 
 
 class TestRuntimeConfigResolution(unittest.TestCase):
@@ -183,6 +189,84 @@ class TestRuntimeConfigResolution(unittest.TestCase):
             self.assertEqual(cfg.model, "kimi-k2")
             self.assertEqual(cfg.base_url, "https://api.moonshot.cn/v1")
 
+    def test_xinghuo_default_model_and_base_url_are_used(self):
+        with patch.dict(
+            os.environ,
+            {
+                "LLM_PROVIDER": "xinghuo",
+                "XINGHUO_API_KEY": "x-key",
+            },
+            clear=True,
+        ):
+            cfg = resolve_runtime_config()
+            self.assertEqual(cfg.model, "generalv3.5")
+            self.assertEqual(cfg.base_url, "https://spark-api-open.xf-yun.com/v1")
+
+    def test_doubao_default_model_and_base_url_are_used(self):
+        with patch.dict(
+            os.environ,
+            {
+                "LLM_PROVIDER": "doubao",
+                "DOUBAO_API_KEY": "d-key",
+            },
+            clear=True,
+        ):
+            cfg = resolve_runtime_config()
+            self.assertEqual(cfg.model, "doubao-pro-32k")
+            self.assertEqual(cfg.base_url, "https://ark.cn-beijing.volces.com/api/v3")
+
+    def test_zhipu_default_model_and_base_url_are_used(self):
+        with patch.dict(
+            os.environ,
+            {
+                "LLM_PROVIDER": "zhipu",
+                "ZHIPU_API_KEY": "z-key",
+            },
+            clear=True,
+        ):
+            cfg = resolve_runtime_config()
+            self.assertEqual(cfg.model, "glm-4-flash")
+            self.assertEqual(cfg.base_url, "https://open.bigmodel.cn/api/paas/v4")
+
+    def test_minimax_default_model_and_base_url_are_used(self):
+        with patch.dict(
+            os.environ,
+            {
+                "LLM_PROVIDER": "minimax",
+                "MINIMAX_API_KEY": "m-key",
+            },
+            clear=True,
+        ):
+            cfg = resolve_runtime_config()
+            self.assertEqual(cfg.model, "MiniMax-Text-01")
+            self.assertEqual(cfg.base_url, "https://api.minimax.chat/v1")
+
+    def test_pangu_default_model_and_base_url_are_used(self):
+        with patch.dict(
+            os.environ,
+            {
+                "LLM_PROVIDER": "pangu",
+                "PANGU_API_KEY": "p-key",
+            },
+            clear=True,
+        ):
+            cfg = resolve_runtime_config()
+            self.assertEqual(cfg.model, "pangu-pro")
+            self.assertEqual(cfg.base_url, "https://modelarts.cn-north-4.myhuaweicloud.com/v1")
+
+    def test_grok_default_model_and_base_url_are_used(self):
+        with patch.dict(
+            os.environ,
+            {
+                "LLM_PROVIDER": "grok",
+                "GROK_API_KEY": "g-key",
+            },
+            clear=True,
+        ):
+            cfg = resolve_runtime_config()
+            self.assertEqual(cfg.model, "grok-2-latest")
+            self.assertEqual(cfg.base_url, "https://api.x.ai/v1")
+
     def test_missing_api_key_raises(self):
         with patch.dict(os.environ, {}, clear=True):
             with self.assertRaises(RuntimeError):
@@ -203,6 +287,12 @@ class TestGatewayRegistry(unittest.TestCase):
         self.assertIsInstance(get_gateway("deepseek"), OpenAICompatibleGateway)
         self.assertIsInstance(get_gateway("qwen"), OpenAICompatibleGateway)
         self.assertIsInstance(get_gateway("kimi"), OpenAICompatibleGateway)
+        self.assertIsInstance(get_gateway("xinghuo"), OpenAICompatibleGateway)
+        self.assertIsInstance(get_gateway("doubao"), OpenAICompatibleGateway)
+        self.assertIsInstance(get_gateway("zhipu"), OpenAICompatibleGateway)
+        self.assertIsInstance(get_gateway("minimax"), OpenAICompatibleGateway)
+        self.assertIsInstance(get_gateway("pangu"), OpenAICompatibleGateway)
+        self.assertIsInstance(get_gateway("grok"), OpenAICompatibleGateway)
 
 
 class TestNativeGatewayErrorHandling(unittest.TestCase):

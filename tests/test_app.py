@@ -458,6 +458,205 @@ class TestQuerySuccess(unittest.TestCase):
         self.assertEqual(refine_opts["api_key"], "q-key")
         self.assertEqual(refine_opts["base_url"], "https://dashscope.aliyuncs.com/compatible-mode/v1")
         self.assertEqual(sql_opts, refine_opts)
+
+    @patch("app.api.execute_query")
+    @patch("app.api.generate_sql")
+    @patch("app.api.refine_query")
+    @patch("app.api.get_schema")
+    @patch("app.api.create_engine")
+    def test_xinghuo_pipeline_options_are_forwarded_end_to_end(
+        self, _mock_engine, mock_schema, mock_refine, mock_sql, mock_exec
+    ):
+        mock_schema.return_value = ""
+        mock_refine.return_value = "desc"
+        mock_sql.return_value = "SELECT 1"
+        mock_exec.return_value = {"columns": [], "rows": []}
+
+        payload = dict(
+            _VALID_PAYLOAD,
+            llm_provider="xinghuo",
+            llm_model="generalv3.5",
+            llm_api_key="x-key",
+            llm_base_url="https://spark-api-open.xf-yun.com/v1",
+        )
+
+        resp = self.client.post("/nl2sql/query", json=payload, headers=_auth_headers(scopes=["query:execute"]))
+        self.assertEqual(resp.status_code, 200)
+
+        refine_opts = mock_refine.call_args.kwargs["llm_options"]
+        sql_opts = mock_sql.call_args.kwargs["llm_options"]
+
+        self.assertEqual(refine_opts["provider"], "xinghuo")
+        self.assertEqual(refine_opts["model"], "generalv3.5")
+        self.assertEqual(refine_opts["api_key"], "x-key")
+        self.assertEqual(refine_opts["base_url"], "https://spark-api-open.xf-yun.com/v1")
+        self.assertEqual(sql_opts, refine_opts)
+
+    @patch("app.api.execute_query")
+    @patch("app.api.generate_sql")
+    @patch("app.api.refine_query")
+    @patch("app.api.get_schema")
+    @patch("app.api.create_engine")
+    def test_doubao_pipeline_options_are_forwarded_end_to_end(
+        self, _mock_engine, mock_schema, mock_refine, mock_sql, mock_exec
+    ):
+        mock_schema.return_value = ""
+        mock_refine.return_value = "desc"
+        mock_sql.return_value = "SELECT 1"
+        mock_exec.return_value = {"columns": [], "rows": []}
+
+        payload = dict(
+            _VALID_PAYLOAD,
+            llm_provider="doubao",
+            llm_model="doubao-pro-32k",
+            llm_api_key="d-key",
+            llm_base_url="https://ark.cn-beijing.volces.com/api/v3",
+        )
+
+        resp = self.client.post("/nl2sql/query", json=payload, headers=_auth_headers(scopes=["query:execute"]))
+        self.assertEqual(resp.status_code, 200)
+
+        refine_opts = mock_refine.call_args.kwargs["llm_options"]
+        sql_opts = mock_sql.call_args.kwargs["llm_options"]
+
+        self.assertEqual(refine_opts["provider"], "doubao")
+        self.assertEqual(refine_opts["model"], "doubao-pro-32k")
+        self.assertEqual(refine_opts["api_key"], "d-key")
+        self.assertEqual(refine_opts["base_url"], "https://ark.cn-beijing.volces.com/api/v3")
+        self.assertEqual(sql_opts, refine_opts)
+
+    @patch("app.api.execute_query")
+    @patch("app.api.generate_sql")
+    @patch("app.api.refine_query")
+    @patch("app.api.get_schema")
+    @patch("app.api.create_engine")
+    def test_zhipu_pipeline_options_are_forwarded_end_to_end(
+        self, _mock_engine, mock_schema, mock_refine, mock_sql, mock_exec
+    ):
+        mock_schema.return_value = ""
+        mock_refine.return_value = "desc"
+        mock_sql.return_value = "SELECT 1"
+        mock_exec.return_value = {"columns": [], "rows": []}
+
+        payload = dict(
+            _VALID_PAYLOAD,
+            llm_provider="zhipu",
+            llm_model="glm-4-flash",
+            llm_api_key="z-key",
+            llm_base_url="https://open.bigmodel.cn/api/paas/v4",
+        )
+
+        resp = self.client.post("/nl2sql/query", json=payload, headers=_auth_headers(scopes=["query:execute"]))
+        self.assertEqual(resp.status_code, 200)
+
+        refine_opts = mock_refine.call_args.kwargs["llm_options"]
+        sql_opts = mock_sql.call_args.kwargs["llm_options"]
+
+        self.assertEqual(refine_opts["provider"], "zhipu")
+        self.assertEqual(refine_opts["model"], "glm-4-flash")
+        self.assertEqual(refine_opts["api_key"], "z-key")
+        self.assertEqual(refine_opts["base_url"], "https://open.bigmodel.cn/api/paas/v4")
+        self.assertEqual(sql_opts, refine_opts)
+
+    @patch("app.api.execute_query")
+    @patch("app.api.generate_sql")
+    @patch("app.api.refine_query")
+    @patch("app.api.get_schema")
+    @patch("app.api.create_engine")
+    def test_minimax_pipeline_options_are_forwarded_end_to_end(
+        self, _mock_engine, mock_schema, mock_refine, mock_sql, mock_exec
+    ):
+        mock_schema.return_value = ""
+        mock_refine.return_value = "desc"
+        mock_sql.return_value = "SELECT 1"
+        mock_exec.return_value = {"columns": [], "rows": []}
+
+        payload = dict(
+            _VALID_PAYLOAD,
+            llm_provider="minimax",
+            llm_model="MiniMax-Text-01",
+            llm_api_key="m-key",
+            llm_base_url="https://api.minimax.chat/v1",
+        )
+
+        resp = self.client.post("/nl2sql/query", json=payload, headers=_auth_headers(scopes=["query:execute"]))
+        self.assertEqual(resp.status_code, 200)
+
+        refine_opts = mock_refine.call_args.kwargs["llm_options"]
+        sql_opts = mock_sql.call_args.kwargs["llm_options"]
+
+        self.assertEqual(refine_opts["provider"], "minimax")
+        self.assertEqual(refine_opts["model"], "MiniMax-Text-01")
+        self.assertEqual(refine_opts["api_key"], "m-key")
+        self.assertEqual(refine_opts["base_url"], "https://api.minimax.chat/v1")
+        self.assertEqual(sql_opts, refine_opts)
+
+    @patch("app.api.execute_query")
+    @patch("app.api.generate_sql")
+    @patch("app.api.refine_query")
+    @patch("app.api.get_schema")
+    @patch("app.api.create_engine")
+    def test_pangu_pipeline_options_are_forwarded_end_to_end(
+        self, _mock_engine, mock_schema, mock_refine, mock_sql, mock_exec
+    ):
+        mock_schema.return_value = ""
+        mock_refine.return_value = "desc"
+        mock_sql.return_value = "SELECT 1"
+        mock_exec.return_value = {"columns": [], "rows": []}
+
+        payload = dict(
+            _VALID_PAYLOAD,
+            llm_provider="pangu",
+            llm_model="pangu-pro",
+            llm_api_key="p-key",
+            llm_base_url="https://modelarts.cn-north-4.myhuaweicloud.com/v1",
+        )
+
+        resp = self.client.post("/nl2sql/query", json=payload, headers=_auth_headers(scopes=["query:execute"]))
+        self.assertEqual(resp.status_code, 200)
+
+        refine_opts = mock_refine.call_args.kwargs["llm_options"]
+        sql_opts = mock_sql.call_args.kwargs["llm_options"]
+
+        self.assertEqual(refine_opts["provider"], "pangu")
+        self.assertEqual(refine_opts["model"], "pangu-pro")
+        self.assertEqual(refine_opts["api_key"], "p-key")
+        self.assertEqual(refine_opts["base_url"], "https://modelarts.cn-north-4.myhuaweicloud.com/v1")
+        self.assertEqual(sql_opts, refine_opts)
+
+    @patch("app.api.execute_query")
+    @patch("app.api.generate_sql")
+    @patch("app.api.refine_query")
+    @patch("app.api.get_schema")
+    @patch("app.api.create_engine")
+    def test_grok_pipeline_options_are_forwarded_end_to_end(
+        self, _mock_engine, mock_schema, mock_refine, mock_sql, mock_exec
+    ):
+        mock_schema.return_value = ""
+        mock_refine.return_value = "desc"
+        mock_sql.return_value = "SELECT 1"
+        mock_exec.return_value = {"columns": [], "rows": []}
+
+        payload = dict(
+            _VALID_PAYLOAD,
+            llm_provider="grok",
+            llm_model="grok-2-latest",
+            llm_api_key="g-key",
+            llm_base_url="https://api.x.ai/v1",
+        )
+
+        resp = self.client.post("/nl2sql/query", json=payload, headers=_auth_headers(scopes=["query:execute"]))
+        self.assertEqual(resp.status_code, 200)
+
+        refine_opts = mock_refine.call_args.kwargs["llm_options"]
+        sql_opts = mock_sql.call_args.kwargs["llm_options"]
+
+        self.assertEqual(refine_opts["provider"], "grok")
+        self.assertEqual(refine_opts["model"], "grok-2-latest")
+        self.assertEqual(refine_opts["api_key"], "g-key")
+        self.assertEqual(refine_opts["base_url"], "https://api.x.ai/v1")
+        self.assertEqual(sql_opts, refine_opts)
+
     @patch("app.api.execute_query")
     @patch("app.api.generate_sql")
     @patch("app.api.refine_query")

@@ -94,6 +94,42 @@ class TestLLMSettings(unittest.TestCase):
         self.assertEqual(settings.model, "kimi-k2")
         self.assertEqual(settings.base_url, "https://api.moonshot.cn/v1")
 
+    def test_xinghuo_defaults_include_base_url(self):
+        with patch.dict(os.environ, {"LLM_PROVIDER": "xinghuo", "XINGHUO_API_KEY": "x-key"}, clear=True):
+            settings = load_llm_startup_settings_from_env()
+        self.assertEqual(settings.model, "generalv3.5")
+        self.assertEqual(settings.base_url, "https://spark-api-open.xf-yun.com/v1")
+
+    def test_doubao_defaults_include_base_url(self):
+        with patch.dict(os.environ, {"LLM_PROVIDER": "doubao", "DOUBAO_API_KEY": "d-key"}, clear=True):
+            settings = load_llm_startup_settings_from_env()
+        self.assertEqual(settings.model, "doubao-pro-32k")
+        self.assertEqual(settings.base_url, "https://ark.cn-beijing.volces.com/api/v3")
+
+    def test_zhipu_defaults_include_base_url(self):
+        with patch.dict(os.environ, {"LLM_PROVIDER": "zhipu", "ZHIPU_API_KEY": "z-key"}, clear=True):
+            settings = load_llm_startup_settings_from_env()
+        self.assertEqual(settings.model, "glm-4-flash")
+        self.assertEqual(settings.base_url, "https://open.bigmodel.cn/api/paas/v4")
+
+    def test_minimax_defaults_include_base_url(self):
+        with patch.dict(os.environ, {"LLM_PROVIDER": "minimax", "MINIMAX_API_KEY": "m-key"}, clear=True):
+            settings = load_llm_startup_settings_from_env()
+        self.assertEqual(settings.model, "MiniMax-Text-01")
+        self.assertEqual(settings.base_url, "https://api.minimax.chat/v1")
+
+    def test_pangu_defaults_include_base_url(self):
+        with patch.dict(os.environ, {"LLM_PROVIDER": "pangu", "PANGU_API_KEY": "p-key"}, clear=True):
+            settings = load_llm_startup_settings_from_env()
+        self.assertEqual(settings.model, "pangu-pro")
+        self.assertEqual(settings.base_url, "https://modelarts.cn-north-4.myhuaweicloud.com/v1")
+
+    def test_grok_defaults_include_base_url(self):
+        with patch.dict(os.environ, {"LLM_PROVIDER": "grok", "GROK_API_KEY": "g-key"}, clear=True):
+            settings = load_llm_startup_settings_from_env()
+        self.assertEqual(settings.model, "grok-2-latest")
+        self.assertEqual(settings.base_url, "https://api.x.ai/v1")
+
     def test_provider_api_key_precedes_global(self):
         with patch.dict(
             os.environ,
