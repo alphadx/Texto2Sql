@@ -51,3 +51,33 @@
 - Modelo mini/equivalente: `gpt-4.1-mini`
 - Endpoint: `https://models.inference.ai.azure.com/chat/completions`
 - API key env: `COPILOT_API_KEY`
+
+## iFlytek (xinghuo)
+- Modelo mini/equivalente: `generalv3.5`
+- Endpoint: `https://spark-api-open.xf-yun.com/v1/chat/completions`
+- API key env: `XINGHUO_API_KEY`
+
+## ByteDance (doubao)
+- Modelo mini/equivalente: `doubao-pro-32k`
+- Endpoint: `https://ark.cn-beijing.volces.com/api/v3/chat/completions`
+- API key env: `DOUBAO_API_KEY`
+
+## Zhipu AI (zhipu)
+- Modelo mini/equivalente: `glm-4-flash`
+- Endpoint: `https://open.bigmodel.cn/api/paas/v4/chat/completions`
+- API key env: `ZHIPU_API_KEY`
+
+## MiniMax (minimax)
+- Modelo mini/equivalente: `MiniMax-Text-01`
+- Endpoint: `https://api.minimax.chat/v1/chat/completions`
+- API key env: `MINIMAX_API_KEY`
+
+## Huawei (pangu)
+- Modelo mini/equivalente: `pangu-pro`
+- Endpoint: `https://modelarts.cn-north-4.myhuaweicloud.com/v1/chat/completions`
+- API key env: `PANGU_API_KEY`
+
+## xAI (grok)
+- Modelo mini/equivalente: `grok-2-latest`
+- Endpoint: `https://api.x.ai/v1/chat/completions`
+- API key env: `GROK_API_KEY`

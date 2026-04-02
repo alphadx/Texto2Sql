@@ -24,6 +24,36 @@ class TestLLMSmokeScript(unittest.TestCase):
             exit_code = run(["--provider", "deepseek", "--dry-run", "--base-url", "bad-url"])
         self.assertEqual(exit_code, 2)
 
+    def test_xinghuo_dry_run_outputs_provider_info(self):
+        with patch.dict(os.environ, {"XINGHUO_API_KEY": "fake"}, clear=False):
+            exit_code = run(["--provider", "xinghuo", "--dry-run"])
+        self.assertEqual(exit_code, 0)
+
+    def test_doubao_dry_run_outputs_provider_info(self):
+        with patch.dict(os.environ, {"DOUBAO_API_KEY": "fake"}, clear=False):
+            exit_code = run(["--provider", "doubao", "--dry-run"])
+        self.assertEqual(exit_code, 0)
+
+    def test_zhipu_dry_run_outputs_provider_info(self):
+        with patch.dict(os.environ, {"ZHIPU_API_KEY": "fake"}, clear=False):
+            exit_code = run(["--provider", "zhipu", "--dry-run"])
+        self.assertEqual(exit_code, 0)
+
+    def test_minimax_dry_run_outputs_provider_info(self):
+        with patch.dict(os.environ, {"MINIMAX_API_KEY": "fake"}, clear=False):
+            exit_code = run(["--provider", "minimax", "--dry-run"])
+        self.assertEqual(exit_code, 0)
+
+    def test_pangu_dry_run_outputs_provider_info(self):
+        with patch.dict(os.environ, {"PANGU_API_KEY": "fake"}, clear=False):
+            exit_code = run(["--provider", "pangu", "--dry-run"])
+        self.assertEqual(exit_code, 0)
+
+    def test_grok_dry_run_outputs_provider_info(self):
+        with patch.dict(os.environ, {"GROK_API_KEY": "fake"}, clear=False):
+            exit_code = run(["--provider", "grok", "--dry-run"])
+        self.assertEqual(exit_code, 0)
+
 
 if __name__ == "__main__":
     unittest.main()

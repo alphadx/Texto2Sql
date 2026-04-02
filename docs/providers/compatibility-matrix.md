@@ -14,6 +14,12 @@
 | Moonshot AI | `kimi-k2` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Meta | `meta-llama/Llama-3.1-8B-Instruct` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | GitHub | `gpt-4.1-mini` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| iFlytek | `generalv3.5` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| ByteDance | `doubao-pro-32k` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Zhipu AI | `glm-4-flash` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| MiniMax | `MiniMax-Text-01` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Huawei | `pangu-pro` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| xAI | `grok-2-latest` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Notas
 

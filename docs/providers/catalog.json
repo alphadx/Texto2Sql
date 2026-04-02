@@ -88,6 +88,54 @@
       "env_api_key": "COPILOT_API_KEY",
       "base_url": "https://models.inference.ai.azure.com/chat/completions",
       "doc": "docs/providers/copilot.md"
+    },
+    {
+      "id": "xinghuo",
+      "company": "iFlytek",
+      "mini_model": "generalv3.5",
+      "env_api_key": "XINGHUO_API_KEY",
+      "base_url": "https://spark-api-open.xf-yun.com/v1/chat/completions",
+      "doc": "docs/providers/xinghuo.md"
+    },
+    {
+      "id": "doubao",
+      "company": "ByteDance",
+      "mini_model": "doubao-pro-32k",
+      "env_api_key": "DOUBAO_API_KEY",
+      "base_url": "https://ark.cn-beijing.volces.com/api/v3/chat/completions",
+      "doc": "docs/providers/doubao.md"
+    },
+    {
+      "id": "zhipu",
+      "company": "Zhipu AI",
+      "mini_model": "glm-4-flash",
+      "env_api_key": "ZHIPU_API_KEY",
+      "base_url": "https://open.bigmodel.cn/api/paas/v4/chat/completions",
+      "doc": "docs/providers/zhipu.md"
+    },
+    {
+      "id": "minimax",
+      "company": "MiniMax",
+      "mini_model": "MiniMax-Text-01",
+      "env_api_key": "MINIMAX_API_KEY",
+      "base_url": "https://api.minimax.chat/v1/chat/completions",
+      "doc": "docs/providers/minimax.md"
+    },
+    {
+      "id": "pangu",
+      "company": "Huawei",
+      "mini_model": "pangu-pro",
+      "env_api_key": "PANGU_API_KEY",
+      "base_url": "https://modelarts.cn-north-4.myhuaweicloud.com/v1/chat/completions",
+      "doc": "docs/providers/pangu.md"
+    },
+    {
+      "id": "grok",
+      "company": "xAI",
+      "mini_model": "grok-2-latest",
+      "env_api_key": "GROK_API_KEY",
+      "base_url": "https://api.x.ai/v1/chat/completions",
+      "doc": "docs/providers/grok.md"
     }
   ]
 }

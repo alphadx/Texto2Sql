@@ -1,4 +1,4 @@
-# Integración LLM varios — archivo de planificación y contexto
+# Otros modelos LLM — archivo de planificación y contexto
 
 Este directorio concentra artefactos de planificación usados durante la evolución multi-proveedor.
 
