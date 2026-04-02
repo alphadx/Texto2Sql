@@ -76,6 +76,12 @@ class TestLLMSettings(unittest.TestCase):
         self.assertEqual(settings.model, "meta-llama/Llama-3.1-8B-Instruct")
         self.assertEqual(settings.base_url, "https://router.huggingface.co/v1")
 
+    def test_copilot_defaults_include_base_url(self):
+        with patch.dict(os.environ, {"LLM_PROVIDER": "copilot", "COPILOT_API_KEY": "c-key"}, clear=True):
+            settings = load_llm_startup_settings_from_env()
+        self.assertEqual(settings.model, "gpt-4.1-mini")
+        self.assertEqual(settings.base_url, "https://models.inference.ai.azure.com")
+
     def test_provider_api_key_precedes_global(self):
         with patch.dict(
             os.environ,

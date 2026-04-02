@@ -37,6 +37,7 @@ _DEFAULT_MODELS = {
 
 _DEFAULT_BASE_URLS = {
     "llama": "https://router.huggingface.co/v1",
+    "copilot": "https://models.inference.ai.azure.com",
 }
 
 

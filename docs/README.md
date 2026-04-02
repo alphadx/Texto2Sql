@@ -86,7 +86,7 @@ Se deja explícito el backlog para ampliar proveedores/modelos más allá de Ope
 - [x] **Mistral**: integración v1 completada (OpenAI-compatible `chat/completions` con soporte por request/env y validación de configuración).
 - [x] **Claude (Anthropic)**: integración v1 completada (gateway nativo `messages`, alias `claude` y soporte por request/env con validación de configuración).
 - [x] **Llama** (proveedores comerciales/hosted): integración v1 completada (OpenAI-compatible hosted con soporte por request/env y validación de configuración).
-- [ ] **Copilot** (escenario enterprise): evaluar alcance técnico real para uso como backend programático. *(Hitos 0 y 1 documentados en `docs/providers/copilot.md`; pendiente implementación.)*
+- [x] **Copilot** (escenario enterprise): integración v1 completada (OpenAI-compatible con enfoque enterprise, soporte request/env y validación de configuración).
 
 ### Criterios mínimos para cerrar cada TODO
 

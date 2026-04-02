@@ -55,6 +55,7 @@ _DEFAULT_BASE_URLS = {
     "mistral": "https://api.mistral.ai/v1",
     "huggingface": "https://router.huggingface.co/v1",
     "llama": "https://router.huggingface.co/v1",
+    "copilot": "https://models.inference.ai.azure.com",
 }
 
 _DEFAULT_MODELS = {

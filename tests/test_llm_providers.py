@@ -144,6 +144,19 @@ class TestRuntimeConfigResolution(unittest.TestCase):
             self.assertEqual(cfg.model, "meta-llama/Llama-3.1-8B-Instruct")
             self.assertEqual(cfg.base_url, "https://router.huggingface.co/v1")
 
+    def test_copilot_default_model_and_base_url_are_used(self):
+        with patch.dict(
+            os.environ,
+            {
+                "LLM_PROVIDER": "copilot",
+                "COPILOT_API_KEY": "c-key",
+            },
+            clear=True,
+        ):
+            cfg = resolve_runtime_config()
+            self.assertEqual(cfg.model, "gpt-4.1-mini")
+            self.assertEqual(cfg.base_url, "https://models.inference.ai.azure.com")
+
     def test_missing_api_key_raises(self):
         with patch.dict(os.environ, {}, clear=True):
             with self.assertRaises(RuntimeError):
