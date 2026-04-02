@@ -209,3 +209,13 @@ Para cambios que impacten el demo (contrato API, UX o smokes), usar:
 - Plantilla PR con sección obligatoria **Impacto en DEMO**: `.github/pull_request_template.md`
 
 Esto permite declarar releases como **Demo Compatible** con evidencia verificable.
+
+## 19) Iniciativa nueva: skill de onboarding + Qwen/Kimi
+
+Se añadió roadmap de **Hito 0 (alineación)** para:
+
+- crear una skill reusable de onboarding de nuevos proveedores LLM,
+- integrar Qwen,
+- e integrar Kimi.
+
+Documento: `docs/providers/provider-onboarding-skill-roadmap.md`.
