@@ -32,6 +32,16 @@
 - Endpoint: `https://api.anthropic.com/v1/messages`
 - API key env: `ANTHROPIC_API_KEY`
 
+## Alibaba Cloud (qwen)
+- Modelo mini/equivalente: `qwen-plus`
+- Endpoint: `https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions`
+- API key env: `QWEN_API_KEY`
+
+## Moonshot AI (kimi)
+- Modelo mini/equivalente: `kimi-k2`
+- Endpoint: `https://api.moonshot.cn/v1/chat/completions`
+- API key env: `KIMI_API_KEY`
+
 ## Meta (llama)
 - Modelo mini/equivalente: `meta-llama/Llama-3.1-8B-Instruct`
 - Endpoint: `https://router.huggingface.co/v1/chat/completions`

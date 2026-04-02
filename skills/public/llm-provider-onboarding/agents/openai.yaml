@@ -1,0 +1,4 @@
+interface:
+  display_name: "LLM Provider Onboarding"
+  short_description: "Integrar nuevos proveedores/modelos LLM en Texto2Sql"
+  default_prompt: "Use this skill to add or update an LLM provider integration end-to-end (config, runtime, tests, docs, smoke)."

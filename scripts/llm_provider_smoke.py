@@ -41,8 +41,18 @@ def run(argv: list[str] | None = None) -> int:
         "api_key": args.api_key or None,
     }
 
-    config = resolve_runtime_config(llm_options)
-    gateway = get_gateway(config.provider)
+    try:
+        config = resolve_runtime_config(llm_options)
+        gateway = get_gateway(config.provider)
+    except (ValueError, RuntimeError) as exc:
+        payload = {
+            "status": "error",
+            "mode": "dry-run" if args.dry_run else "live",
+            "provider": args.provider,
+            "error": str(exc),
+        }
+        print(json.dumps(payload, ensure_ascii=False), file=sys.stderr)
+        return 2
 
     if args.dry_run:
         payload = {

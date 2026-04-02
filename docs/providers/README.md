@@ -8,6 +8,8 @@ Estas guías están orientadas a consumo desde **PHP 8.3, Node.js, Python, C++, 
 - [Google Gemini](./gemini.md)
 - [Mistral](./mistral.md)
 - [Anthropic Claude](./claude.md)
+- [Alibaba Qwen](./qwen.md)
+- [Moonshot Kimi](./kimi.md)
 - [Llama (hosted)](./llama.md)
 - [GitHub Copilot / Models](./copilot.md)
 - [Matriz de compatibilidad](./compatibility-matrix.md)

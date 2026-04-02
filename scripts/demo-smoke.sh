@@ -84,10 +84,16 @@ fi
 echo "[demo-smoke] building and starting demo container..."
 docker compose -f "$COMPOSE_FILE" up -d --build
 
-echo "[demo-smoke] waiting for mysql to become ready..."
-for _ in {1..240}; do
+echo "[demo-smoke] waiting for mysql container healthcheck (healthy)..."
+deadline=$((SECONDS + 180))
+while true; do
   CID=$(docker compose -f "$COMPOSE_FILE" ps -q texto2sql-demo)
   if [[ -z "$CID" ]]; then
+    if (( SECONDS >= deadline )); then
+      echo "[demo-smoke] mysql did not become ready in time (container id unavailable)" >&2
+      docker compose -f "$COMPOSE_FILE" logs --no-color texto2sql-demo || true
+      exit 1
+    fi
     sleep 2
     continue
   fi
@@ -95,19 +101,26 @@ for _ in {1..240}; do
   STATUS=$(docker inspect -f "{{.State.Status}}" "$CID" 2>/dev/null || true)
   if [[ "$STATUS" == "exited" || "$STATUS" == "dead" ]]; then
     echo "[demo-smoke] container exited before mysql became ready" >&2
-    docker compose -f "$COMPOSE_FILE" logs texto2sql-demo || true
+    docker compose -f "$COMPOSE_FILE" logs --no-color texto2sql-demo || true
     exit 1
   fi
 
-  if mysql_exec "SELECT 1" >/dev/null 2>&1; then
+  HEALTH=$(docker inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}no-healthcheck{{end}}' "$CID" 2>/dev/null || true)
+  if [[ "$HEALTH" == "healthy" ]]; then
     break
+  fi
+
+  if (( SECONDS >= deadline )); then
+    echo "[demo-smoke] mysql did not become ready in time (healthcheck status: ${HEALTH:-unknown})" >&2
+    docker compose -f "$COMPOSE_FILE" logs --no-color texto2sql-demo || true
+    exit 1
   fi
   sleep 2
 done
 
 if ! mysql_exec "SELECT 1" >/dev/null 2>&1; then
-  echo "[demo-smoke] mysql did not become ready in time" >&2
-  docker compose -f "$COMPOSE_FILE" logs texto2sql-demo || true
+  echo "[demo-smoke] mysql healthcheck is healthy but SQL ping failed" >&2
+  docker compose -f "$COMPOSE_FILE" logs --no-color texto2sql-demo || true
   exit 1
 fi
 
@@ -123,7 +136,7 @@ done
 
 if [[ ! "$FILM_COUNT" =~ ^[0-9]+$ || "$FILM_COUNT" -le 0 ]]; then
   echo "[demo-smoke] invalid sakila.film count: ${FILM_COUNT:-empty}" >&2
-  docker compose -f "$COMPOSE_FILE" logs texto2sql-demo || true
+  docker compose -f "$COMPOSE_FILE" logs --no-color texto2sql-demo || true
   exit 1
 fi
 
@@ -132,7 +145,7 @@ echo "[demo-smoke] OK: sakila.film rows = $FILM_COUNT"
 echo "[demo-smoke] waiting for chat.php endpoint..."
 if ! wait_http_ok "http://localhost:8080/chat.php?session_id=smoke-get"; then
   echo "[demo-smoke] chat.php GET endpoint not reachable" >&2
-  docker compose -f "$COMPOSE_FILE" logs texto2sql-demo || true
+  docker compose -f "$COMPOSE_FILE" logs --no-color texto2sql-demo || true
   exit 1
 fi
 

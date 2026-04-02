@@ -12,6 +12,7 @@ import threading
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Dict, List
+from urllib.parse import urlparse
 from urllib import request
 import json
 from urllib.error import HTTPError, URLError
@@ -31,6 +32,8 @@ _PROVIDER_ALIASES = {
     "claude": "anthropic",
     "gemini": "gemini",
     "google": "gemini",
+    "qwen": "qwen",
+    "kimi": "kimi",
     "llama": "llama",
     "copilot": "copilot",
 }
@@ -44,6 +47,8 @@ _PROVIDER_ENV_PREFIX = {
     "huggingface": "HUGGINGFACE",
     "anthropic": "ANTHROPIC",
     "gemini": "GEMINI",
+    "qwen": "QWEN",
+    "kimi": "KIMI",
     "llama": "LLAMA",
     "copilot": "COPILOT",
 }
@@ -53,6 +58,23 @@ _DEFAULT_BASE_URLS = {
     "deepseek": "https://api.deepseek.com/v1",
     "mistral": "https://api.mistral.ai/v1",
     "huggingface": "https://router.huggingface.co/v1",
+    "qwen": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    "kimi": "https://api.moonshot.cn/v1",
+    "llama": "https://router.huggingface.co/v1",
+    "copilot": "https://models.inference.ai.azure.com",
+}
+
+_DEFAULT_MODELS = {
+    "openai": "gpt-4",
+    "deepseek": "deepseek-chat",
+    "mistral": "mistral-small-latest",
+    "huggingface": "Qwen/Qwen2.5-3B-Instruct",
+    "anthropic": "claude-3-5-haiku-latest",
+    "gemini": "gemini-2.0-flash-lite",
+    "qwen": "qwen-plus",
+    "kimi": "kimi-k2",
+    "llama": "meta-llama/Llama-3.1-8B-Instruct",
+    "copilot": "gpt-4.1-mini",
 }
 
 
@@ -380,6 +402,18 @@ def _get_env(prefix: str, key: str) -> str | None:
     return cleaned or None
 
 
+def _normalize_base_url(value: Any) -> str | None:
+    if value is None:
+        return None
+    cleaned = str(value).strip()
+    if not cleaned:
+        return None
+    parsed = urlparse(cleaned)
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        raise ValueError(f"Invalid LLM base URL: {cleaned!r}. Expected absolute http(s) URL.")
+    return cleaned
+
+
 def resolve_runtime_config(llm_options: dict[str, Any] | None = None) -> LLMRuntimeConfig:
     options = llm_options or {}
     provider = normalize_provider(str(options.get("provider") or os.getenv("LLM_PROVIDER") or "openai"))
@@ -393,27 +427,26 @@ def resolve_runtime_config(llm_options: dict[str, Any] | None = None) -> LLMRunt
 
     api_key = str(
         options.get("api_key")
-        or os.getenv("LLM_API_KEY")
         or _get_env(env_prefix, "API_KEY")
+        or os.getenv("LLM_API_KEY")
         or os.getenv("OPENAI_API_KEY")
         or ""
     ).strip()
     model = str(
         options.get("model")
-        or os.getenv("LLM_MODEL")
         or _get_env(env_prefix, "MODEL")
+        or os.getenv("LLM_MODEL")
         or os.getenv("OPENAI_MODEL")
-        or "gpt-4"
+        or _DEFAULT_MODELS.get(provider, "gpt-4")
     ).strip()
 
-    base_url_raw = (
+    base_url = _normalize_base_url(
         options.get("base_url")
-        or os.getenv("LLM_BASE_URL")
         or _get_env(env_prefix, "BASE_URL")
+        or os.getenv("LLM_BASE_URL")
         or os.getenv("OPENAI_BASE_URL")
         or _DEFAULT_BASE_URLS.get(provider)
     )
-    base_url = str(base_url_raw).strip() if base_url_raw else None
 
     if not api_key:
         raise RuntimeError(

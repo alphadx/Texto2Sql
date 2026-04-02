@@ -68,6 +68,20 @@ class TestApiLLMProviderErrors(unittest.TestCase):
         self.assertEqual(body["detail"]["retryable"], True)
         self.assertIn("LLM provider error (anthropic)", body["detail"]["error"])
 
+    @patch("app.api.create_engine")
+    @patch("app.api.get_schema")
+    @patch("app.api.refine_query")
+    def test_llm_config_validation_error_returns_400(self, mock_refine, mock_schema, _mock_engine):
+        mock_schema.return_value = "TABLE users(id int)"
+        mock_refine.side_effect = ValueError("Invalid LLM base URL: 'bad-url'")
+
+        response = self.client.post("/nl2sql/query", json=_VALID_PAYLOAD)
+
+        self.assertEqual(response.status_code, 400)
+        body = response.json()
+        self.assertIn("LLM config validation error", body["detail"]["error"])
+        self.assertIn("Invalid LLM base URL", body["detail"]["error"])
+
 
 if __name__ == "__main__":
     unittest.main()
