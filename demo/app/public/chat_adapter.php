@@ -211,6 +211,10 @@ function call_api(string $message, string $sessionId, array $params): array {
     $safeApiUrl = sanitize_url_for_logs($apiUrl);
     $correlationId = $params['correlation_id'] ?? bin2hex(random_bytes(8));
     $apiToken = $params['api_bearer'] ?? ($_ENV['NL2SQL_API_KEY'] ?? getenv('NL2SQL_API_KEY') ?: '');
+    $httpTimeoutSeconds = (int)($params['http_timeout_seconds'] ?? ($_ENV['DEMO_NL2SQL_HTTP_TIMEOUT_SECONDS'] ?? getenv('DEMO_NL2SQL_HTTP_TIMEOUT_SECONDS') ?: 900));
+    if ($httpTimeoutSeconds <= 0) {
+        $httpTimeoutSeconds = 900;
+    }
 
     $apiProvider = $params['llm_provider'] ?? ($_ENV['NL2SQL_API_PROVIDER'] ?? getenv('NL2SQL_API_PROVIDER') ?: null);
     $apiModel = $params['llm_model'] ?? ($_ENV['NL2SQL_MODEL'] ?? getenv('NL2SQL_MODEL') ?: null);
@@ -244,7 +248,7 @@ function call_api(string $message, string $sessionId, array $params): array {
             $apiToken !== '' ? 'Authorization: Bearer ' . $apiToken : null,
         ]),
         CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE),
-        CURLOPT_TIMEOUT => 60,
+        CURLOPT_TIMEOUT => $httpTimeoutSeconds,
     ]);
 
     $response = curl_exec($ch);
