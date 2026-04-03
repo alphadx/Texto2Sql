@@ -13,8 +13,12 @@ services:
       - MYSQL_DEMO_DB=${MYSQL_DEMO_DB:-sakila}
       - MYSQL_HOST=${MYSQL_HOST:-127.0.0.1}
       - MYSQL_PORT=${MYSQL_PORT:-3306}
+      - DEMO_MYSQL_WAIT_TIMEOUT_SECONDS=${DEMO_MYSQL_WAIT_TIMEOUT_SECONDS:-900}
+      - DEMO_MYSQL_INTERACTIVE_TIMEOUT_SECONDS=${DEMO_MYSQL_INTERACTIVE_TIMEOUT_SECONDS:-900}
+      - DEMO_MYSQL_MAX_EXECUTION_TIME_MS=${DEMO_MYSQL_MAX_EXECUTION_TIME_MS:-900000}
       - NL2SQL_API_URL=${NL2SQL_API_URL}
       - NL2SQL_API_KEY=${NL2SQL_API_KEY}
+      - DEMO_NL2SQL_HTTP_TIMEOUT_SECONDS=${DEMO_NL2SQL_HTTP_TIMEOUT_SECONDS:-900}
       - INSTALL_YII_ON_BOOT=${INSTALL_YII_ON_BOOT:-false}
     ports:
       - "8080:8080"
@@ -27,7 +31,7 @@ services:
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -P 3306 --silent"]
       interval: 2s
-      timeout: 3s
+      timeout: ${DEMO_HEALTHCHECK_TIMEOUT_SECONDS:-900}s
       retries: 60
       start_period: 30s
 

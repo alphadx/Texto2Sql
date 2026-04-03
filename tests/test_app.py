@@ -816,6 +816,21 @@ class TestSqlGuard(unittest.TestCase):
         with self.assertRaises(SQLValidationError):
             validate_sql_query("SELECT 1; SELECT 2")
 
+    def test_allows_single_statement_with_trailing_semicolon(self):
+        from app.db.sql_guard import validate_sql_query
+
+        validate_sql_query("SELECT 1;")
+
+    def test_allows_semicolon_inside_single_quoted_literal(self):
+        from app.db.sql_guard import validate_sql_query
+
+        validate_sql_query("SELECT 'a; b' AS txt")
+
+    def test_allows_semicolon_inside_double_quoted_identifier(self):
+        from app.db.sql_guard import validate_sql_query
+
+        validate_sql_query('SELECT 1 AS "col;name"')
+
 
 class TestDeleteSession(unittest.TestCase):
     def setUp(self):
