@@ -13,9 +13,9 @@ worker_class = "uvicorn.workers.UvicornWorker"
 worker_connections = int(os.getenv("WORKER_CONNECTIONS", "1000"))
 
 # Timeouts / lifecycle
-keepalive = int(os.getenv("KEEPALIVE", "5"))
-timeout = int(os.getenv("TIMEOUT", "180"))
-graceful_timeout = int(os.getenv("GRACEFUL_TIMEOUT", "30"))
+keepalive = int(os.getenv("KEEPALIVE", "900"))
+timeout = int(os.getenv("TIMEOUT", "900"))
+graceful_timeout = int(os.getenv("GRACEFUL_TIMEOUT", "900"))
 
 # Reinicio preventivo para evitar crecimiento de memoria en cargas largas
 max_requests = int(os.getenv("MAX_REQUESTS", "2000"))

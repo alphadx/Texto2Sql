@@ -2,6 +2,16 @@
 
 Conversor intermedio (requiere LLM) para traducir preguntas en lenguaje natural a SQL y devolver resultados en JSON.
 
+## Política operativa (SQL + timeouts)
+
+- La API aplica política de **una sola sentencia SQL por consulta**.
+- APP y DEMO exponen timeouts por variables de entorno.
+- Los `.env.example` definen defaults operativos de **15 minutos** para timeouts.
+
+Ver guía: `docs/operacion/timeouts-y-politica-sql.md`.
+
+Para casos de extracción documental con LLM, ver también: `docs/operacion/ejemplos-documentos-llm.md`.
+
 ## Seguridad (JWT, scopes y roles)
 
 La API usa autenticación por **Bearer JWT** para proteger `POST /nl2sql/query` y endpoints administrativos (ejemplo: `DELETE /session/{session_id}`).

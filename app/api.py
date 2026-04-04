@@ -41,7 +41,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 DEFAULT_MAX_ROWS = int(os.getenv("MAX_RESULT_ROWS", "1000"))
-DEFAULT_QUERY_TIMEOUT_MS = int(os.getenv("QUERY_TIMEOUT_MS", "15000"))
+DEFAULT_QUERY_TIMEOUT_MS = int(os.getenv("QUERY_TIMEOUT_MS", "900000"))
 
 _default_session_manager = build_session_manager_from_env()
 _audit_logger = build_audit_logger_from_env()

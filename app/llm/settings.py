@@ -115,7 +115,7 @@ def load_llm_startup_settings_from_env() -> LLMStartupSettings:
         base_url=base_url,
         max_retries=int(_read("LLM_MAX_RETRIES", "2")),
         retry_backoff_seconds=float(_read("LLM_RETRY_BACKOFF_SECONDS", "0.5")),
-        http_timeout_seconds=int(_read("LLM_HTTP_TIMEOUT_SECONDS", "60")),
+        http_timeout_seconds=int(_read("LLM_HTTP_TIMEOUT_SECONDS", "900")),
         circuit_breaker_failure_threshold=int(_read("LLM_CIRCUIT_BREAKER_FAILURE_THRESHOLD", "3")),
         circuit_breaker_reset_seconds=int(_read("LLM_CIRCUIT_BREAKER_RESET_SECONDS", "30")),
         startup_validate=startup_validate,

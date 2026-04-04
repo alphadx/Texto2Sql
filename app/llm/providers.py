@@ -343,7 +343,7 @@ def _http_json_post(*, provider: str, endpoint: str, headers: dict[str, str], pa
                 headers=headers,
                 method="POST",
             )
-            with request.urlopen(req, timeout=int(os.getenv("LLM_HTTP_TIMEOUT_SECONDS", "60"))) as response:
+            with request.urlopen(req, timeout=int(os.getenv("LLM_HTTP_TIMEOUT_SECONDS", "900"))) as response:
                 parsed = json.loads(response.read().decode("utf-8"))
                 _record_success(provider)
                 return parsed

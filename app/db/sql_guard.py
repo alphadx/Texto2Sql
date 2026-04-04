@@ -51,18 +51,37 @@ def _mask_string_literals(sql: str) -> str:
 
 def _has_multiple_statements(sql: str) -> bool:
     """Return True if *sql* contains more than one statement."""
-    in_single = False
-    in_double = False
+    in_single = False  # SQL string literal: '...'
+    in_double = False  # Quoted identifier / string depending dialect: "..."
+    i = 0
+    length = len(sql)
 
-    for i, ch in enumerate(sql):
+    while i < length:
+        ch = sql[i]
+
         if ch == "'" and not in_double:
+            # SQL escapes single quotes as doubled quote: ''
+            if in_single and i + 1 < length and sql[i + 1] == "'":
+                i += 2
+                continue
             in_single = not in_single
-        elif ch == '"' and not in_single:
+            i += 1
+            continue
+
+        if ch == '"' and not in_single:
+            # SQL quoted identifiers can escape quotes as doubled quote: ""
+            if in_double and i + 1 < length and sql[i + 1] == '"':
+                i += 2
+                continue
             in_double = not in_double
-        elif ch == ";" and not in_single and not in_double:
+            i += 1
+            continue
+
+        if ch == ";" and not in_single and not in_double:
             tail = sql[i + 1 :].strip()
             if tail:
                 return True
+        i += 1
 
     return False
 
