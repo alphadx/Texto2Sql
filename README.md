@@ -10,6 +10,8 @@ Conversor intermedio (requiere LLM) para traducir preguntas en lenguaje natural 
 
 Ver guía: `docs/operacion/timeouts-y-politica-sql.md`.
 
+Para casos de extracción documental con LLM, ver también: `docs/operacion/ejemplos-documentos-llm.md`.
+
 ## Seguridad (JWT, scopes y roles)
 
 La API usa autenticación por **Bearer JWT** para proteger `POST /nl2sql/query` y endpoints administrativos (ejemplo: `DELETE /session/{session_id}`).
