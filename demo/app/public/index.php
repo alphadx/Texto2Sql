@@ -417,20 +417,22 @@ function renderHistory(history) {
     const div = document.createElement('div');
     div.className = `msg ${item.role === 'user' ? 'user' : 'bot'}`;
     const ts = new Date((item.ts || 0) * 1000).toLocaleString();
-    if (item.role === 'assistant') {
-      div.innerHTML = `
-        ${renderAssistantOutput(item.result, item.text)}
-        <div class="meta">${ts}</div>
-      `;
-    } else {
-      div.innerHTML = `<div>${escapeHtml(item.text || '')}</div><div class="meta">${ts}</div>`;
-    }
+    const metaDiv = document.createElement('div');
+    metaDiv.className = 'meta';
+    metaDiv.textContent = ts;
 
-    if (item.role === 'assistant' && item.result && Array.isArray(item.result.columnas) && item.result.columnas.length > 0 && Array.isArray(item.result.filas)) {
-      const resultWrap = document.createElement('div');
-      resultWrap.innerHTML = tableHTML(item.result);
-      resultWrap.prepend(createTableActions(item.result));
-      div.appendChild(resultWrap);
+    if (item.role === 'assistant') {
+      div.innerHTML = renderAssistantOutput(item.result, item.text);
+      if (item.result && Array.isArray(item.result.columnas) && item.result.columnas.length > 0 && Array.isArray(item.result.filas)) {
+        const resultWrap = document.createElement('div');
+        resultWrap.innerHTML = tableHTML(item.result);
+        resultWrap.prepend(createTableActions(item.result));
+        div.appendChild(resultWrap);
+      }
+      div.appendChild(metaDiv);
+    } else {
+      div.innerHTML = `<div>${escapeHtml(item.text || '')}</div>`;
+      div.appendChild(metaDiv);
     }
 
     chat.appendChild(div);
