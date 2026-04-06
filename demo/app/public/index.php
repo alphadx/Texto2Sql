@@ -36,6 +36,24 @@
       background: #7c2d12;
       color: #ffedd5;
     }
+    .table-actions {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+    .table-actions button {
+      padding: 6px 10px;
+      border-radius: 8px;
+      border: 1px solid #374151;
+      background: #111827;
+      color: #f9fafb;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .table-actions button:hover {
+      background: #1f2937;
+    }
     table { width: 100%; border-collapse: collapse; margin-top: 8px; background: #0b1220; }
     th, td { border: 1px solid #374151; padding: 8px; font-size: 13px; }
   </style>
@@ -233,15 +251,6 @@ function validateClientParams(params) {
   return null;
 }
 
-function tableHTML(result) {
-  if (!result || !Array.isArray(result.columnas) || !Array.isArray(result.filas) || result.columnas.length === 0) {
-    return '<em>Sin tabla en esta respuesta.</em>';
-  }
-  const head = result.columnas.map(c => `<th>${c}</th>`).join('');
-  const rows = result.filas.map(r => `<tr>${(Array.isArray(r) ? r : [r]).map(v => `<td>${v ?? ''}</td>`).join('')}</tr>`).join('');
-  return `<table><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table>`;
-}
-
 function escapeHtml(value) {
   return String(value ?? '')
     .replaceAll('&', '&amp;')
@@ -249,6 +258,117 @@ function escapeHtml(value) {
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#39;');
+}
+
+let alertTimeout = null;
+function showTemporaryAlert(msg, type='info', duration=2500) {
+  showAlert(msg, type);
+  if (alertTimeout) {
+    clearTimeout(alertTimeout);
+  }
+  alertTimeout = setTimeout(() => showAlert(''), duration);
+}
+
+function normalizeTableRows(result) {
+  const columns = Array.isArray(result.columnas) ? result.columnas : [];
+  const rows = Array.isArray(result.filas) ? result.filas : [];
+  return rows.map(row => {
+    if (Array.isArray(row)) {
+      return row;
+    }
+    if (row && typeof row === 'object') {
+      return columns.map(col => row[col] ?? row[String(col)] ?? '');
+    }
+    return [row];
+  });
+}
+
+function tableHTML(result) {
+  if (!result || !Array.isArray(result.columnas) || !Array.isArray(result.filas) || result.columnas.length === 0) {
+    return '<em>Sin tabla en esta respuesta.</em>';
+  }
+  const head = result.columnas.map(c => `<th>${escapeHtml(c)}</th>`).join('');
+  const rows = normalizeTableRows(result).map(r => `<tr>${r.map(v => `<td>${escapeHtml(v)}</td>`).join('')}</tr>`).join('');
+  return `<table><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function tableToCsv(result) {
+  const columns = Array.isArray(result.columnas) ? result.columnas : [];
+  const rows = normalizeTableRows(result);
+  const escapeCsv = value => `"${String(value ?? '').replace(/"/g, '""')}"`;
+  const lines = [];
+  if (columns.length) {
+    lines.push(columns.map(escapeCsv).join(','));
+  }
+  rows.forEach(row => {
+    lines.push(row.map(escapeCsv).join(','));
+  });
+  return lines.join('\r\n');
+}
+
+function copyTextToClipboard(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    return navigator.clipboard.writeText(text);
+  }
+  return new Promise((resolve, reject) => {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.left = '-9999px';
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    try {
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textarea);
+      successful ? resolve() : reject(new Error('clipboard copy failed'));
+    } catch (err) {
+      document.body.removeChild(textarea);
+      reject(err);
+    }
+  });
+}
+
+function downloadCsv(result, filename = 'tabla.csv') {
+  const csv = tableToCsv(result);
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+function createTableActions(result) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'table-actions';
+
+  const copyButton = document.createElement('button');
+  copyButton.type = 'button';
+  copyButton.textContent = 'Copiar CSV';
+  copyButton.addEventListener('click', async () => {
+    try {
+      await copyTextToClipboard(tableToCsv(result));
+      showTemporaryAlert('CSV copiado al portapapeles.');
+    } catch (err) {
+      showTemporaryAlert('No se pudo copiar el CSV.', 'warn');
+    }
+  });
+
+  const downloadButton = document.createElement('button');
+  downloadButton.type = 'button';
+  downloadButton.textContent = 'Descargar CSV';
+  downloadButton.addEventListener('click', () => {
+    downloadCsv(result, 'tabla_demo.csv');
+    showTemporaryAlert('Descarga de CSV iniciada.');
+  });
+
+  wrapper.appendChild(copyButton);
+  wrapper.appendChild(downloadButton);
+  return wrapper;
 }
 
 function renderAssistantOutput(result, fallbackText) {
@@ -306,9 +426,10 @@ function renderHistory(history) {
       div.innerHTML = `<div>${escapeHtml(item.text || '')}</div><div class="meta">${ts}</div>`;
     }
 
-    if (item.role === 'assistant' && item.result) {
+    if (item.role === 'assistant' && item.result && Array.isArray(item.result.columnas) && item.result.columnas.length > 0 && Array.isArray(item.result.filas)) {
       const resultWrap = document.createElement('div');
       resultWrap.innerHTML = tableHTML(item.result);
+      resultWrap.prepend(createTableActions(item.result));
       div.appendChild(resultWrap);
     }
 
