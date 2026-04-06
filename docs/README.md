@@ -2,6 +2,8 @@
 
 Este documento resume **qué modelos/proveedores LLM comerciales** soporta el proyecto hoy y **cómo se configuran las API keys** tanto por entorno como por request.
 
+> Referencia operativa adicional: `docs/operacion/ejemplos-documentos-llm.md` (8 documentos tipo y etapa de construcción de ejemplos).
+
 ## 1) Resumen rápido
 
 - El backend usa el SDK de `openai` y un cliente `OpenAI(...)` configurable con `base_url`, por lo que opera como **OpenAI-compatible API**.
