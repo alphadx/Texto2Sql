@@ -17,6 +17,7 @@ from app.db.connector import (
     build_connection_url,
     default_port,
     execute_query,
+    get_db_version,
     get_schema,
 )
 from app.db.sql_guard import SQLValidationError, validate_sql_query
@@ -192,6 +193,7 @@ def _build_nl2sql_router(session_manager: SessionManager) -> APIRouter:
                 )
                 engine = create_engine(conn_url)
                 schema = get_schema(engine)
+                db_version = get_db_version(engine, db_model)
             except Exception as exc:  # noqa: BLE001
                 logger.error("Database connection error: %s", exc)
                 error_type = "db_connection_error"
@@ -214,6 +216,9 @@ def _build_nl2sql_router(session_manager: SessionManager) -> APIRouter:
                     session_id=session_id,
                     natural_query=payload.consulta_nl,
                     schema=schema,
+                    db_name=payload.nombre_bd,
+                    db_model=db_model,
+                    db_version=db_version,
                     session_manager=session_manager,
                     llm_options=llm_options,
                 )
@@ -221,7 +226,9 @@ def _build_nl2sql_router(session_manager: SessionManager) -> APIRouter:
                     session_id=session_id,
                     refined_query=refined,
                     schema=schema,
+                    db_name=payload.nombre_bd,
                     db_model=db_model,
+                    db_version=db_version,
                     session_manager=session_manager,
                     llm_options=llm_options,
                 )

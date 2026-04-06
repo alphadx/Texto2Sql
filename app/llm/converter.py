@@ -28,6 +28,9 @@ You are a query-refinement agent.  Your job is to analyse a natural-language
 question about a relational database and produce a clear, formal description of
 the data the user wants to retrieve.
 
+Target Database: {db_name}
+Database Engine: {db_model} (version: {db_version})
+
 Database schema:
 {schema}
 
@@ -38,17 +41,18 @@ For each user question:
 - Do NOT write SQL.  Respond in plain English."""
 
 _SQL_AGENT_SYSTEM = """\
-You are a SQL-generation agent for {db_model} databases.  Your job is to
-convert a formal query description into a valid, executable {db_model} SQL
-statement.
+You are a SQL-generation agent for {db_model} databases (version {db_version}).
+Your job is to convert a formal query description into a valid, executable
+{db_model} SQL statement for the database "{db_name}".
 
 Database schema:
 {schema}
 
 Rules:
 - Return ONLY the raw SQL statement – no explanations, no markdown fences.
-- Use correct {db_model} syntax and functions.
-- Generate SELECT statements only (read-only)."""
+- Use correct {db_model} syntax and functions appropriate for version {db_version}.
+- Generate SELECT statements only (read-only).
+- Ensure compatibility with {db_model} {db_version}."""
 
 
 # ---------------------------------------------------------------------------
@@ -80,6 +84,9 @@ def refine_query(
     session_id: str,
     natural_query: str,
     schema: str,
+    db_name: str,
+    db_model: str,
+    db_version: str,
     session_manager: SessionManager,
     llm_options: dict[str, Any] | None = None,
 ) -> str:
@@ -90,7 +97,12 @@ def refine_query(
         history = [
             {
                 "role": "system",
-                "content": _REFINER_SYSTEM.format(schema=schema),
+                "content": _REFINER_SYSTEM.format(
+                    schema=schema,
+                    db_name=db_name,
+                    db_model=db_model,
+                    db_version=db_version,
+                ),
             }
         ]
 
@@ -114,7 +126,9 @@ def generate_sql(
     session_id: str,
     refined_query: str,
     schema: str,
+    db_name: str,
     db_model: str,
+    db_version: str,
     session_manager: SessionManager,
     llm_options: dict[str, Any] | None = None,
 ) -> str:
@@ -126,7 +140,10 @@ def generate_sql(
             {
                 "role": "system",
                 "content": _SQL_AGENT_SYSTEM.format(
-                    schema=schema, db_model=db_model
+                    schema=schema,
+                    db_name=db_name,
+                    db_model=db_model,
+                    db_version=db_version,
                 ),
             }
         ]

@@ -44,6 +44,9 @@ class TestConverterGatewayIntegration(unittest.TestCase):
             session_id="s1",
             natural_query="Muéstrame usuarios",
             schema="TABLE users(id int, name text)",
+            db_name="testdb",
+            db_model="postgres",
+            db_version="14.0",
             session_manager=self.session_manager,
             llm_options={"provider": "openai"},
         )
@@ -62,7 +65,9 @@ class TestConverterGatewayIntegration(unittest.TestCase):
             session_id="s2",
             refined_query="Trae una fila",
             schema="TABLE users(id int)",
+            db_name="testdb",
             db_model="postgres",
+            db_version="14.0",
             session_manager=self.session_manager,
             llm_options={"provider": "openai"},
         )
@@ -85,6 +90,9 @@ class TestConverterGatewayIntegration(unittest.TestCase):
                 session_id="s3",
                 natural_query="Usuarios activos",
                 schema="TABLE users(id int)",
+                db_name="testdb",
+                db_model="postgres",
+                db_version="14.0",
                 session_manager=self.session_manager,
                 llm_options={"provider": "huggingface"},
             )
@@ -102,6 +110,9 @@ class TestConverterGatewayIntegration(unittest.TestCase):
                 session_id="s4",
                 natural_query="Usuarios activos",
                 schema="TABLE users(id int)",
+                db_name="testdb",
+                db_model="postgres",
+                db_version="14.0",
                 session_manager=self.session_manager,
                 llm_options={
                     "provider": "huggingface",
@@ -129,6 +140,9 @@ class TestConverterGatewayIntegration(unittest.TestCase):
                 session_id="s5",
                 natural_query="Usuarios activos",
                 schema="TABLE users(id int)",
+                db_name="testdb",
+                db_model="postgres",
+                db_version="14.0",
                 session_manager=self.session_manager,
                 llm_options={"provider": "gemini"},
             )
@@ -153,6 +167,9 @@ class TestConverterGatewayIntegration(unittest.TestCase):
                 session_id="s6",
                 natural_query="Usuarios activos",
                 schema="TABLE users(id int)",
+                db_name="testdb",
+                db_model="postgres",
+                db_version="14.0",
                 session_manager=self.session_manager,
                 llm_options={"provider": "mistral"},
             )
@@ -177,6 +194,9 @@ class TestConverterGatewayIntegration(unittest.TestCase):
                 session_id="s7",
                 natural_query="Usuarios activos",
                 schema="TABLE users(id int)",
+                db_name="testdb",
+                db_model="postgres",
+                db_version="14.0",
                 session_manager=self.session_manager,
                 llm_options={"provider": "claude"},
             )
@@ -201,6 +221,9 @@ class TestConverterGatewayIntegration(unittest.TestCase):
                 session_id="s8",
                 natural_query="Usuarios activos",
                 schema="TABLE users(id int)",
+                db_name="testdb",
+                db_model="postgres",
+                db_version="14.0",
                 session_manager=self.session_manager,
                 llm_options={"provider": "llama"},
             )
@@ -225,6 +248,9 @@ class TestConverterGatewayIntegration(unittest.TestCase):
                 session_id="s9",
                 natural_query="Usuarios activos",
                 schema="TABLE users(id int)",
+                db_name="testdb",
+                db_model="postgres",
+                db_version="14.0",
                 session_manager=self.session_manager,
                 llm_options={"provider": "copilot"},
             )
@@ -249,6 +275,9 @@ class TestConverterGatewayIntegration(unittest.TestCase):
                 session_id="s10",
                 natural_query="Usuarios activos",
                 schema="TABLE users(id int)",
+                db_name="testdb",
+                db_model="postgres",
+                db_version="14.0",
                 session_manager=self.session_manager,
                 llm_options={"provider": "qwen"},
             )
@@ -273,6 +302,9 @@ class TestConverterGatewayIntegration(unittest.TestCase):
                 session_id="s11",
                 natural_query="Usuarios activos",
                 schema="TABLE users(id int)",
+                db_name="testdb",
+                db_model="postgres",
+                db_version="14.0",
                 session_manager=self.session_manager,
                 llm_options={"provider": "xinghuo"},
             )
@@ -297,6 +329,9 @@ class TestConverterGatewayIntegration(unittest.TestCase):
                 session_id="s12",
                 natural_query="Usuarios activos",
                 schema="TABLE users(id int)",
+                db_name="testdb",
+                db_model="postgres",
+                db_version="14.0",
                 session_manager=self.session_manager,
                 llm_options={"provider": "doubao"},
             )
@@ -321,6 +356,9 @@ class TestConverterGatewayIntegration(unittest.TestCase):
                 session_id="s13",
                 natural_query="Usuarios activos",
                 schema="TABLE users(id int)",
+                db_name="testdb",
+                db_model="postgres",
+                db_version="14.0",
                 session_manager=self.session_manager,
                 llm_options={"provider": "zhipu"},
             )
@@ -345,6 +383,9 @@ class TestConverterGatewayIntegration(unittest.TestCase):
                 session_id="s14",
                 natural_query="Usuarios activos",
                 schema="TABLE users(id int)",
+                db_name="testdb",
+                db_model="postgres",
+                db_version="14.0",
                 session_manager=self.session_manager,
                 llm_options={"provider": "minimax"},
             )
@@ -369,6 +410,9 @@ class TestConverterGatewayIntegration(unittest.TestCase):
                 session_id="s15",
                 natural_query="Usuarios activos",
                 schema="TABLE users(id int)",
+                db_name="testdb",
+                db_model="postgres",
+                db_version="14.0",
                 session_manager=self.session_manager,
                 llm_options={"provider": "pangu"},
             )
@@ -393,6 +437,9 @@ class TestConverterGatewayIntegration(unittest.TestCase):
                 session_id="s16",
                 natural_query="Usuarios activos",
                 schema="TABLE users(id int)",
+                db_name="testdb",
+                db_model="postgres",
+                db_version="14.0",
                 session_manager=self.session_manager,
                 llm_options={"provider": "grok"},
             )

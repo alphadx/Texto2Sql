@@ -153,9 +153,10 @@ class TestQuerySuccess(unittest.TestCase):
     @patch("app.api.generate_sql")
     @patch("app.api.refine_query")
     @patch("app.api.get_schema")
+    @patch("app.api.get_db_version")
     @patch("app.api.create_engine")
     def test_returns_columns_and_rows(
-        self, _mock_engine, mock_schema, mock_refine, mock_sql, mock_exec
+        self, _mock_engine, mock_db_version, mock_schema, mock_refine, mock_sql, mock_exec
     ):
         mock_schema.return_value = "TABLE users (id integer, name varchar)"
         mock_refine.return_value = "Retrieve all users"
@@ -180,9 +181,10 @@ class TestQuerySuccess(unittest.TestCase):
     @patch("app.api.generate_sql")
     @patch("app.api.refine_query")
     @patch("app.api.get_schema")
+    @patch("app.api.get_db_version")
     @patch("app.api.create_engine")
     def test_session_id_echoed_when_provided(
-        self, _mock_engine, mock_schema, mock_refine, mock_sql, mock_exec
+        self, _mock_engine, mock_db_version, mock_schema, mock_refine, mock_sql, mock_exec
     ):
         mock_schema.return_value = ""
         mock_refine.return_value = "desc"
@@ -199,9 +201,10 @@ class TestQuerySuccess(unittest.TestCase):
     @patch("app.api.generate_sql")
     @patch("app.api.refine_query")
     @patch("app.api.get_schema")
+    @patch("app.api.get_db_version")
     @patch("app.api.create_engine")
     def test_llm_override_params_are_forwarded(
-        self, _mock_engine, mock_schema, mock_refine, mock_sql, mock_exec
+        self, _mock_engine, mock_db_version, mock_schema, mock_refine, mock_sql, mock_exec
     ):
         mock_schema.return_value = ""
         mock_refine.return_value = "desc"
@@ -232,9 +235,10 @@ class TestQuerySuccess(unittest.TestCase):
     @patch("app.api.generate_sql")
     @patch("app.api.refine_query")
     @patch("app.api.get_schema")
+    @patch("app.api.get_db_version")
     @patch("app.api.create_engine")
     def test_huggingface_pipeline_options_are_forwarded_end_to_end(
-        self, _mock_engine, mock_schema, mock_refine, mock_sql, mock_exec
+        self, _mock_engine, mock_db_version, mock_schema, mock_refine, mock_sql, mock_exec
     ):
         mock_schema.return_value = ""
         mock_refine.return_value = "desc"
@@ -265,9 +269,10 @@ class TestQuerySuccess(unittest.TestCase):
     @patch("app.api.generate_sql")
     @patch("app.api.refine_query")
     @patch("app.api.get_schema")
+    @patch("app.api.get_db_version")
     @patch("app.api.create_engine")
     def test_gemini_pipeline_options_are_forwarded_end_to_end(
-        self, _mock_engine, mock_schema, mock_refine, mock_sql, mock_exec
+        self, _mock_engine, mock_db_version, mock_schema, mock_refine, mock_sql, mock_exec
     ):
         mock_schema.return_value = ""
         mock_refine.return_value = "desc"
@@ -298,9 +303,10 @@ class TestQuerySuccess(unittest.TestCase):
     @patch("app.api.generate_sql")
     @patch("app.api.refine_query")
     @patch("app.api.get_schema")
+    @patch("app.api.get_db_version")
     @patch("app.api.create_engine")
     def test_mistral_pipeline_options_are_forwarded_end_to_end(
-        self, _mock_engine, mock_schema, mock_refine, mock_sql, mock_exec
+        self, _mock_engine, mock_db_version, mock_schema, mock_refine, mock_sql, mock_exec
     ):
         mock_schema.return_value = ""
         mock_refine.return_value = "desc"
@@ -331,9 +337,10 @@ class TestQuerySuccess(unittest.TestCase):
     @patch("app.api.generate_sql")
     @patch("app.api.refine_query")
     @patch("app.api.get_schema")
+    @patch("app.api.get_db_version")
     @patch("app.api.create_engine")
     def test_claude_pipeline_options_are_forwarded_end_to_end(
-        self, _mock_engine, mock_schema, mock_refine, mock_sql, mock_exec
+        self, _mock_engine, mock_db_version, mock_schema, mock_refine, mock_sql, mock_exec
     ):
         mock_schema.return_value = ""
         mock_refine.return_value = "desc"
@@ -364,9 +371,10 @@ class TestQuerySuccess(unittest.TestCase):
     @patch("app.api.generate_sql")
     @patch("app.api.refine_query")
     @patch("app.api.get_schema")
+    @patch("app.api.get_db_version")
     @patch("app.api.create_engine")
     def test_llama_pipeline_options_are_forwarded_end_to_end(
-        self, _mock_engine, mock_schema, mock_refine, mock_sql, mock_exec
+        self, _mock_engine, mock_db_version, mock_schema, mock_refine, mock_sql, mock_exec
     ):
         mock_schema.return_value = ""
         mock_refine.return_value = "desc"
@@ -397,9 +405,10 @@ class TestQuerySuccess(unittest.TestCase):
     @patch("app.api.generate_sql")
     @patch("app.api.refine_query")
     @patch("app.api.get_schema")
+    @patch("app.api.get_db_version")
     @patch("app.api.create_engine")
     def test_copilot_pipeline_options_are_forwarded_end_to_end(
-        self, _mock_engine, mock_schema, mock_refine, mock_sql, mock_exec
+        self, _mock_engine, mock_db_version, mock_schema, mock_refine, mock_sql, mock_exec
     ):
         mock_schema.return_value = ""
         mock_refine.return_value = "desc"
@@ -430,9 +439,10 @@ class TestQuerySuccess(unittest.TestCase):
     @patch("app.api.generate_sql")
     @patch("app.api.refine_query")
     @patch("app.api.get_schema")
+    @patch("app.api.get_db_version")
     @patch("app.api.create_engine")
     def test_qwen_pipeline_options_are_forwarded_end_to_end(
-        self, _mock_engine, mock_schema, mock_refine, mock_sql, mock_exec
+        self, _mock_engine, mock_db_version, mock_schema, mock_refine, mock_sql, mock_exec
     ):
         mock_schema.return_value = ""
         mock_refine.return_value = "desc"
@@ -463,9 +473,10 @@ class TestQuerySuccess(unittest.TestCase):
     @patch("app.api.generate_sql")
     @patch("app.api.refine_query")
     @patch("app.api.get_schema")
+    @patch("app.api.get_db_version")
     @patch("app.api.create_engine")
     def test_xinghuo_pipeline_options_are_forwarded_end_to_end(
-        self, _mock_engine, mock_schema, mock_refine, mock_sql, mock_exec
+        self, _mock_engine, mock_db_version, mock_schema, mock_refine, mock_sql, mock_exec
     ):
         mock_schema.return_value = ""
         mock_refine.return_value = "desc"
@@ -496,9 +507,10 @@ class TestQuerySuccess(unittest.TestCase):
     @patch("app.api.generate_sql")
     @patch("app.api.refine_query")
     @patch("app.api.get_schema")
+    @patch("app.api.get_db_version")
     @patch("app.api.create_engine")
     def test_doubao_pipeline_options_are_forwarded_end_to_end(
-        self, _mock_engine, mock_schema, mock_refine, mock_sql, mock_exec
+        self, _mock_engine, mock_db_version, mock_schema, mock_refine, mock_sql, mock_exec
     ):
         mock_schema.return_value = ""
         mock_refine.return_value = "desc"
@@ -529,9 +541,10 @@ class TestQuerySuccess(unittest.TestCase):
     @patch("app.api.generate_sql")
     @patch("app.api.refine_query")
     @patch("app.api.get_schema")
+    @patch("app.api.get_db_version")
     @patch("app.api.create_engine")
     def test_zhipu_pipeline_options_are_forwarded_end_to_end(
-        self, _mock_engine, mock_schema, mock_refine, mock_sql, mock_exec
+        self, _mock_engine, mock_db_version, mock_schema, mock_refine, mock_sql, mock_exec
     ):
         mock_schema.return_value = ""
         mock_refine.return_value = "desc"
@@ -562,9 +575,10 @@ class TestQuerySuccess(unittest.TestCase):
     @patch("app.api.generate_sql")
     @patch("app.api.refine_query")
     @patch("app.api.get_schema")
+    @patch("app.api.get_db_version")
     @patch("app.api.create_engine")
     def test_minimax_pipeline_options_are_forwarded_end_to_end(
-        self, _mock_engine, mock_schema, mock_refine, mock_sql, mock_exec
+        self, _mock_engine, mock_db_version, mock_schema, mock_refine, mock_sql, mock_exec
     ):
         mock_schema.return_value = ""
         mock_refine.return_value = "desc"
@@ -595,9 +609,10 @@ class TestQuerySuccess(unittest.TestCase):
     @patch("app.api.generate_sql")
     @patch("app.api.refine_query")
     @patch("app.api.get_schema")
+    @patch("app.api.get_db_version")
     @patch("app.api.create_engine")
     def test_pangu_pipeline_options_are_forwarded_end_to_end(
-        self, _mock_engine, mock_schema, mock_refine, mock_sql, mock_exec
+        self, _mock_engine, mock_db_version, mock_schema, mock_refine, mock_sql, mock_exec
     ):
         mock_schema.return_value = ""
         mock_refine.return_value = "desc"
@@ -628,9 +643,10 @@ class TestQuerySuccess(unittest.TestCase):
     @patch("app.api.generate_sql")
     @patch("app.api.refine_query")
     @patch("app.api.get_schema")
+    @patch("app.api.get_db_version")
     @patch("app.api.create_engine")
     def test_grok_pipeline_options_are_forwarded_end_to_end(
-        self, _mock_engine, mock_schema, mock_refine, mock_sql, mock_exec
+        self, _mock_engine, mock_db_version, mock_schema, mock_refine, mock_sql, mock_exec
     ):
         mock_schema.return_value = ""
         mock_refine.return_value = "desc"
@@ -661,9 +677,10 @@ class TestQuerySuccess(unittest.TestCase):
     @patch("app.api.generate_sql")
     @patch("app.api.refine_query")
     @patch("app.api.get_schema")
+    @patch("app.api.get_db_version")
     @patch("app.api.create_engine")
     def test_new_session_id_generated_when_absent(
-        self, _mock_engine, mock_schema, mock_refine, mock_sql, mock_exec
+        self, _mock_engine, mock_db_version, mock_schema, mock_refine, mock_sql, mock_exec
     ):
         mock_schema.return_value = ""
         mock_refine.return_value = "desc"
@@ -686,9 +703,10 @@ class TestQueryRegressionWithRedis(unittest.TestCase):
     @patch("app.api.generate_sql")
     @patch("app.api.refine_query")
     @patch("app.api.get_schema")
+    @patch("app.api.get_db_version")
     @patch("app.api.create_engine")
     def test_nl2sql_query_flow_remains_ok_with_redis_session_manager(
-        self, _mock_engine, mock_schema, mock_refine, mock_sql, mock_exec
+        self, _mock_engine, mock_db_version, mock_schema, mock_refine, mock_sql, mock_exec
     ):
         mock_schema.return_value = "TABLE users (id integer)"
         mock_refine.return_value = "Retrieve users"

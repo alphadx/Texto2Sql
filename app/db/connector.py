@@ -127,6 +127,37 @@ def get_schema(engine: Engine) -> str:
     return "\n\n".join(parts)
 
 
+def get_db_version(engine: Engine, db_model: str) -> str:
+    """Get the version string of the target database."""
+    db_model = db_model.lower()
+    try:
+        with engine.connect() as conn:
+            if db_model in {"mysql", "mariadb"}:
+                result = conn.execute(text("SELECT VERSION()"))
+                version = result.scalar()
+                return str(version) if version else "unknown"
+            elif db_model in {"postgres", "postgresql"}:
+                result = conn.execute(text("SELECT version()"))
+                version = result.scalar()
+                return str(version) if version else "unknown"
+            elif db_model == "sqlsrv":
+                result = conn.execute(text("SELECT @@version"))
+                version = result.scalar()
+                return str(version) if version else "unknown"
+            elif db_model == "sybase":
+                result = conn.execute(text("SELECT @@version"))
+                version = result.scalar()
+                return str(version) if version else "unknown"
+            elif db_model == "sqlite":
+                result = conn.execute(text("SELECT sqlite_version()"))
+                version = result.scalar()
+                return str(version) if version else "unknown"
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Could not retrieve version for %s: %s", db_model, exc)
+        return "unknown"
+    return "unknown"
+
+
 # ---------------------------------------------------------------------------
 # Type helpers
 # ---------------------------------------------------------------------------
