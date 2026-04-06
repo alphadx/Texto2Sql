@@ -18,8 +18,11 @@
     .cfg { background: #0b1220; border-radius: 10px; padding: 12px; margin-bottom: 12px; }
     .cfg-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
     .cfg input, .cfg select { width: 100%; box-sizing: border-box; }
-    form { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-top: 12px; }
+    form { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+    form > textarea { width: 100%; box-sizing: border-box; }
+    form > div { display: flex; gap: 8px; }
     input, button, select { padding: 10px; border-radius: 8px; border: none; }
+    textarea { padding: 10px; border-radius: 8px; border: none; font-family: Arial, sans-serif; font-size: 14px; }
     button { cursor: pointer; }
     .status { font-size: 13px; opacity: 0.85; margin-top: 8px; }
     .hint { font-size: 12px; opacity: 0.8; margin-top: 6px; color: #d1d5db; }
@@ -107,7 +110,7 @@
 
   <div id="chat" class="chat"></div>
   <form id="chatForm">
-    <input id="message" name="message" placeholder="Ej: Top 5 películas por arriendo" required />
+    <textarea id="message" name="message" placeholder="Ej: Top 5 películas por arriendo" required style="resize: vertical; min-height: 80px;"></textarea>
     <div style="display:flex; gap:8px;">
       <button id="clearSessionBtn" type="button">Limpiar sesión LLM</button>
       <button id="sendBtn" type="submit">Enviar</button>
@@ -383,7 +386,10 @@ function renderAssistantOutput(result, fallbackText) {
   if (formalText) {
     blocks.push(`
       <div class="result-block">
-        <div class="result-title">Texto formal</div>
+        <div class="result-title" style="display: flex; justify-content: space-between; align-items: center;">
+          <span>Texto formal</span>
+          <button type="button" class="copy-btn" data-copy="${escapeHtml(formalText).replace(/"/g, '&quot;')}" style="padding: 4px 8px; font-size: 12px; background: #1f2937; color: #f9fafb; border: 1px solid #374151; border-radius: 4px; cursor: pointer;">Copiar</button>
+        </div>
         <div class="result-body">${escapeHtml(formalText)}</div>
       </div>
     `);
@@ -392,7 +398,10 @@ function renderAssistantOutput(result, fallbackText) {
   if (sqlText) {
     blocks.push(`
       <div class="result-block">
-        <div class="result-title">SQL generado</div>
+        <div class="result-title" style="display: flex; justify-content: space-between; align-items: center;">
+          <span>SQL generado</span>
+          <button type="button" class="copy-btn" data-copy="${escapeHtml(sqlText).replace(/"/g, '&quot;')}" style="padding: 4px 8px; font-size: 12px; background: #1f2937; color: #f9fafb; border: 1px solid #374151; border-radius: 4px; cursor: pointer;">Copiar</button>
+        </div>
         <div class="result-body">${escapeHtml(sqlText)}</div>
       </div>
     `);
@@ -431,13 +440,37 @@ function renderHistory(history) {
       }
       div.appendChild(metaDiv);
     } else {
-      div.innerHTML = `<div>${escapeHtml(item.text || '')}</div>`;
+      const messageText = item.text || '';
+      const userMsgDiv = document.createElement('div');
+      userMsgDiv.style.display = 'flex';
+      userMsgDiv.style.justifyContent = 'space-between';
+      userMsgDiv.style.alignItems = 'flex-start';
+      userMsgDiv.style.gap = '8px';
+      userMsgDiv.innerHTML = `
+        <div style="flex: 1; white-space: pre-wrap; word-break: break-word;">${escapeHtml(messageText)}</div>
+        <button type="button" class="copy-question-btn" data-copy="${escapeHtml(messageText).replace(/"/g, '&quot;')}" style="padding: 4px 8px; font-size: 12px; background: #1f2937; color: #f9fafb; border: 1px solid #374151; border-radius: 4px; cursor: pointer; white-space: nowrap; flex-shrink: 0;">Copiar pregunta</button>
+      `;
+      div.appendChild(userMsgDiv);
       div.appendChild(metaDiv);
     }
 
     chat.appendChild(div);
   });
   chat.scrollTop = chat.scrollHeight;
+
+  // Agregar event listeners para los botones de copiar
+  chat.querySelectorAll('.copy-btn, .copy-question-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const text = btn.getAttribute('data-copy') || '';
+      try {
+        await copyTextToClipboard(text);
+        showTemporaryAlert('Copiado al portapapeles.');
+      } catch (err) {
+        showTemporaryAlert('No se pudo copiar.', 'warn');
+      }
+    });
+  });
 }
 
 function contextSignature(params) {
